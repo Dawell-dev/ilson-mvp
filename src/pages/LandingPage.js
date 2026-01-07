@@ -84,6 +84,7 @@ const LandingPage = () => {
           <div className="hidden md:flex items-center space-x-6">
             <a href="#features" className="text-gray-600 hover:text-orange-500">특징</a>
             <a href="#testimonials" className="text-gray-600 hover:text-orange-500">후기</a>
+            <Link to="/login" className="text-gray-600 hover:text-orange-500">로그인</Link>
             <Link to="/jobs" className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">
               시작하기
             </Link>
@@ -325,6 +326,7 @@ const LandingPage = () => {
       <nav className="fixed bottom-4 right-4 z-50">
         <div className="bg-white rounded-lg shadow-lg p-3 space-y-2">
           <Link to="/" className="block px-4 py-2 hover:bg-gray-100 rounded text-sm font-medium">홈</Link>
+          <Link to="/login" className="block px-4 py-2 hover:bg-gray-100 rounded text-sm font-medium">로그인</Link>
           <Link to="/jobs" className="block px-4 py-2 hover:bg-gray-100 rounded text-sm font-medium">일자리</Link>
           <Link to="/employer/post" className="block px-4 py-2 hover:bg-gray-100 rounded text-sm font-medium">기업등록</Link>
           <Link to="/admin/employers" className="block px-4 py-2 hover:bg-gray-100 rounded text-sm font-medium text-orange-600">관리자</Link>
