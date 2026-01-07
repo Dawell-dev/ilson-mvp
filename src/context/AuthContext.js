@@ -79,7 +79,8 @@ export const AuthProvider = ({ children }) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: window.location.origin + '/auth/callback'
+        redirectTo: window.location.origin + '/auth/callback',
+        scopes: 'profile_nickname profile_image'
       }
     });
     return { data, error };
