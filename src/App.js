@@ -7,8 +7,8 @@ import LoginPage from './pages/auth/LoginPage';
 import AuthCallback from './pages/auth/AuthCallback';
 import SelectRolePage from './pages/auth/SelectRolePage';
 
-// 기존 페이지
-import LandingPage from './pages/LandingPage';
+// 페이지
+import HomePage from './pages/HomePage';
 
 // 시니어 구직자용 페이지
 import RegisterPage from './pages/worker/RegisterPage';
@@ -31,7 +31,7 @@ function App() {
       <Router>
         <Routes>
           {/* 메인 */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<HomePage />} />
 
           {/* 인증 */}
           <Route path="/login" element={<LoginPage />} />

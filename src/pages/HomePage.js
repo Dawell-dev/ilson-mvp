@@ -1,0 +1,742 @@
+import React, { useState } from 'react';
+// lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
+
+// ─── 데이터 ───
+const JOBS = [
+  { id: 1, icon: '🏢', title: '아파트 경비', location: '화도읍 마석로 12', pay: '시급 11,000원', tags: ['주간근무', '주5일'], company: '다웰서비스', isNew: true, distance: '350m', dist: 0.35, walkTime: '5분', color: '#C62828', x: '30%', y: '30%' },
+  { id: 2, icon: '🧹', title: '상가 청소', location: '화도읍 녹촌로 45', pay: '시급 10,500원', tags: ['오전근무', '주3일'], company: '그린관리', isNew: true, distance: '800m', dist: 0.8, walkTime: '12분', color: '#E65100', x: '65%', y: '22%' },
+  { id: 3, icon: '🅿️', title: '주차 안내', location: '화도읍 수레로 88', pay: '시급 11,500원', tags: ['교대근무', '주5일'], company: '파크원', isNew: false, distance: '1.2km', dist: 1.2, walkTime: '18분', color: '#1B5E20', x: '22%', y: '62%' },
+  { id: 4, icon: '🌳', title: '아파트 조경', location: '마석동 중앙로 33', pay: '일급 95,000원', tags: ['주3일', '야외'], company: '푸른조경', isNew: false, distance: '1.8km', dist: 1.8, walkTime: '25분', color: '#0D47A1', x: '76%', y: '72%' },
+  { id: 5, icon: '📦', title: '택배 분류', location: '화도읍 창현로 56', pay: '시급 12,000원', tags: ['오전4시간', '주5일'], company: '로지스', isNew: true, distance: '2.3km', dist: 2.3, walkTime: '32분', color: '#4A148C', x: '42%', y: '14%' },
+  { id: 6, icon: '🏫', title: '학교 시설관리', location: '화도읍 비룡로 22', pay: '월급 230만원', tags: ['주간근무', '주5일'], company: '에듀시설', isNew: false, distance: '2.8km', dist: 2.8, walkTime: '38분', color: '#004D40', x: '82%', y: '46%' },
+  { id: 7, icon: '🍳', title: '구내식당 조리', location: '마석동 경춘로 110', pay: '시급 11,000원', tags: ['오전근무', '주5일'], company: '맛찬들', isNew: true, distance: '3.1km', dist: 3.1, walkTime: '42분', color: '#880E4F', x: '14%', y: '82%' },
+];
+
+
+const DISTANCES = ['1km', '3km', '5km', '전체'];
+
+// ─── 공통 SVG ───
+function KakaoIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <path d="M12 3C6.48 3 2 6.58 2 10.95c0 2.82 1.87 5.3 4.69 6.7-.15.53-.96 3.43-1 3.58 0 .05.02.1.06.13.04.02.09.01.13-.01.17-.03 3.18-2.1 3.68-2.44.79.12 1.6.18 2.44.18 5.52 0 10-3.58 10-7.95S17.52 3 12 3z" fill="#191919" />
+    </svg>
+  );
+}
+
+// 걷는 사람 + 위치핀 아이콘
+function AppIcon() {
+  return (
+    <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+      <path d="M26 4C17.16 4 10 11.16 10 20C10 31.5 26 48 26 48C26 48 42 31.5 42 20C42 11.16 34.84 4 26 4Z"
+        fill="rgba(255,255,255,0.2)" stroke="white" strokeWidth="1.5"/>
+      <circle cx="26" cy="15" r="4" fill="white"/>
+      <line x1="26" y1="19" x2="22" y2="27" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+      <line x1="26" y1="19" x2="30" y2="27" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+      <line x1="22" y1="23" x2="30" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="22" y1="27" x2="19" y2="33" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+      <line x1="30" y1="27" x2="33" y2="33" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+// ─── 유틸 ───
+function formatPhone(e) {
+  let v = e.target.value.replace(/[^0-9]/g, '');
+  if (v.length > 3 && v.length <= 7) v = v.slice(0, 3) + '-' + v.slice(3);
+  else if (v.length > 7) v = v.slice(0, 3) + '-' + v.slice(3, 7) + '-' + v.slice(7, 11);
+  e.target.value = v;
+}
+
+function getFiltered(distance) {
+  const max = distance === '1km' ? 1 : distance === '3km' ? 3 : distance === '5km' ? 5 : 999;
+  return JOBS.filter((j) => j.dist <= max);
+}
+
+
+
+
+// ─────────────────────────────────────
+// 1) 로그인 화면
+// ─────────────────────────────────────
+function LoginScreen({ onNext }) {
+  const [loading, setLoading] = useState(false);
+  const [showPhone, setShowPhone] = useState(false);
+
+  const handleKakao = () => {
+    setLoading(true);
+    setTimeout(() => onNext(), 1500);
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen" style={{ background: '#F5F0EB' }}>
+      {/* 상단 로고 + 슬로건 */}
+      <div className="flex-1 flex flex-col justify-center items-center px-[30px] pt-[60px] pb-5">
+        <div className="mb-7 animate-fade-up">
+          <div className="flex flex-col items-center gap-3.5">
+            <div className="w-[88px] h-[88px] rounded-[22px] flex items-center justify-center shadow-[0_8px_28px_rgba(232,92,30,0.35)]" style={{ background: '#E85C1E' }}>
+              <AppIcon />
+            </div>
+            <div className="flex items-baseline gap-px">
+              <span className="text-4xl font-black tracking-[-2px]" style={{ color: '#E85C1E' }}>일</span>
+              <span className="text-4xl font-black text-[#212121] tracking-[-2px]">손</span>
+            </div>
+          </div>
+        </div>
+        <div className="animate-fade-up animation-delay-100 mt-1 mb-3">
+          <span className="inline-block text-[14px] font-medium rounded-full py-1.5 px-4" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC', color: '#993C1D' }}>
+            걸어서 갈 수 있는 일자리
+          </span>
+        </div>
+        <div className="animate-fade-up animation-delay-100 text-[22px] text-[#212121] font-extrabold text-center leading-snug">
+          내 주변 일자리,<br />바로 알려드려요
+        </div>
+        <div className="flex gap-5 mt-9 animate-fade-up animation-delay-150 w-full px-4">
+          <div className="flex-1 text-center py-4 rounded-2xl border border-[#EEEEEE] bg-white">
+            <div className="text-[26px] font-extrabold" style={{ color: '#E85C1E' }}>1,200+</div>
+            <div className="text-[14px] text-[#9E9E9E] font-medium mt-1">지금 뽑고 있어요</div>
+          </div>
+          <div className="flex-1 text-center py-4 rounded-2xl border border-[#EEEEEE] bg-white">
+            <div className="text-[26px] font-extrabold" style={{ color: '#E85C1E' }}>8,500+</div>
+            <div className="text-[14px] text-[#9E9E9E] font-medium mt-1">이미 찾았어요</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 하단 버튼 영역 */}
+      <div className="px-6 pb-12 pt-5">
+        <button
+          className="w-full py-[20px] px-6 border-none rounded-[28px] text-[19px] font-bold flex items-center justify-center gap-3 shadow-[0_2px_10px_rgba(254,229,0,0.3)] animate-fade-up animation-delay-200"
+          style={{ background: '#FEE500', color: '#191919' }}
+          onClick={handleKakao}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <div className="w-[22px] h-[22px] border-[3px] border-[rgba(25,25,25,0.15)] rounded-full animate-spin" style={{ borderTopColor: '#191919' }} />
+              <span>로그인 중이에요...</span>
+            </>
+          ) : (
+            <>
+              <KakaoIcon />
+              <span>카카오톡으로 바로 시작</span>
+            </>
+          )}
+        </button>
+        <div className="text-center mt-3 text-[15px] text-[#9E9E9E] leading-relaxed animate-fade-up animation-delay-250">
+          터치 한 번이면 바로 시작돼요
+        </div>
+
+        {/* 구분선 */}
+        <div className="flex items-center gap-4 my-6">
+          <div className="flex-1 h-px" style={{ background: '#EDE8E2' }} />
+          <span className="text-[13px] text-[#9E9E9E]">또는</span>
+          <div className="flex-1 h-px" style={{ background: '#EDE8E2' }} />
+        </div>
+
+        {/* 전화번호 로그인 */}
+        {!showPhone ? (
+          <button
+            className="w-full py-[18px] px-6 rounded-[28px] text-[17px] font-semibold text-[#424242] flex items-center justify-center gap-2.5"
+            style={{ background: '#FBF9F7', border: '1px solid #EDE8E2' }}
+            onClick={() => setShowPhone(true)}
+          >
+            <span className="text-[20px]">📱</span> 전화번호로 시작하기
+          </button>
+        ) : (
+          <div className="rounded-[28px] p-5 animate-fade-in" style={{ background: '#FBF9F7', border: '2px solid #FDDCCC' }}>
+            <div className="text-[17px] font-bold text-[#212121] mb-3.5">📱 전화번호를 알려주세요</div>
+            <div className="flex gap-2.5 mb-2.5">
+              <input
+                type="tel"
+                placeholder="010-0000-0000"
+                onInput={formatPhone}
+                className="flex-1 px-4 py-[16px] rounded-[22px] text-[19px] font-semibold tracking-wider outline-none text-[#212121]"
+                style={{ border: '2px solid #EDE8E2', background: 'white' }}
+              />
+              <button className="px-[18px] py-[16px] text-white border-none rounded-[22px] text-[16px] font-bold whitespace-nowrap" style={{ background: '#E85C1E' }}>
+                인증요청
+              </button>
+            </div>
+            <div className="text-[14px] text-[#9E9E9E]">문자로 인증번호를 보내드릴게요</div>
+          </div>
+        )}
+
+        {/* 고객센터 */}
+        <div className="text-center mt-6 p-4 rounded-[18px]" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC' }}>
+          <div className="text-[16px] text-[#424242]">도움이 필요하시면 전화 주세요</div>
+          <div className="text-[22px] font-extrabold mt-1" style={{ color: '#E85C1E' }}>☎ 1588-0000</div>
+        </div>
+
+        {/* 고지사항 */}
+        <div className="mt-5 p-4 rounded-[18px]" style={{ background: '#F5F0EB' }}>
+          <ul className="list-none p-0 m-0 flex flex-col gap-1">
+            <li className="text-[12px] text-[#999] leading-relaxed">· 일손은 구인·구직 정보를 연결해주는 플랫폼이에요</li>
+            <li className="text-[12px] text-[#999] leading-relaxed">· 근로계약은 구인업체와 직접 체결해야 해요</li>
+          </ul>
+        </div>
+
+        {/* 약관 동의 */}
+        <div className="text-center mt-4 text-[13px] text-[#9E9E9E] leading-relaxed">
+          시작하면 <span className="underline cursor-pointer">이용약관</span> 및 <span className="underline cursor-pointer">개인정보처리방침</span>에 동의하게 돼요
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────
+// 2) 위치 허용 화면
+// ─────────────────────────────────────
+function LocationScreen({ onGranted, onSkip }) {
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [regionName, setRegionName] = useState('');
+
+  const handleGrant = () => {
+    setLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const { latitude, longitude } = pos.coords;
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
+            );
+            const data = await res.json();
+            const addr = data.address || {};
+            const name = addr.village || addr.town || addr.city_district || addr.county || addr.city || '내 동네';
+            setRegionName(name);
+            setLoading(false);
+            setDone(true);
+            setTimeout(() => onGranted(name), 800);
+          } catch {
+            setRegionName('화도읍');
+            setLoading(false);
+            setDone(true);
+            setTimeout(() => onGranted('화도읍'), 800);
+          }
+        },
+        () => {
+          setRegionName('화도읍');
+          setLoading(false);
+          setDone(true);
+          setTimeout(() => onGranted('화도읍'), 800);
+        },
+        { timeout: 8000 }
+      );
+    } else {
+      setRegionName('화도읍');
+      setLoading(false);
+      setDone(true);
+      setTimeout(() => onGranted('화도읍'), 800);
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-white justify-center">
+      <div className="px-7 py-10">
+        {/* 지도 일러스트 */}
+        <div className="w-full h-[220px] rounded-[28px] bg-gradient-to-b from-[#E8F5E9] to-[#C8E6C9] flex items-center justify-center mb-8 relative overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 text-xl animate-bounce" style={{ animationDelay: '0.3s' }}>📍</div>
+          <div className="absolute top-[55%] left-[60%] text-xl animate-bounce" style={{ animationDelay: '0.5s' }}>📍</div>
+          <div className="absolute top-[35%] left-[72%] text-xl animate-bounce" style={{ animationDelay: '0.7s' }}>📍</div>
+          <div className="absolute top-[68%] left-[28%] text-xl animate-bounce" style={{ animationDelay: '0.9s' }}>📍</div>
+          <div className="w-[60px] h-[60px] rounded-full bg-white shadow-[0_4px_16px_rgba(230,81,0,0.25)] flex items-center justify-center z-[2] relative">
+            <div className="w-11 h-11 rounded-[22px] bg-primary flex items-center justify-center text-[22px]">📍</div>
+            <div className="absolute w-[76px] h-[76px] rounded-full border-[3px] border-primary/20 animate-ping" />
+          </div>
+        </div>
+
+        {/* 텍스트 */}
+        <div className="text-center mb-8">
+          {done ? (
+            <>
+              <div className="text-[46px] mb-3.5">✅</div>
+              <div className="text-[23px] font-extrabold text-primary mb-2">위치 확인 완료!</div>
+              <div className="text-base text-[#424242] leading-relaxed">
+                <strong className="text-primary font-bold">{regionName}</strong> 근처<br />일자리를 찾고 있어요
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-[25px] font-extrabold text-[#212121] mb-2.5 leading-snug">
+                내 근처 일자리를<br />바로 찾아볼까요?
+              </div>
+              <div className="text-base text-[#757575] leading-relaxed">
+                위치를 허용하시면<br /><strong className="text-[#424242]">걸어서 갈 수 있는 가까운 일자리</strong>를<br />먼저 보여드려요
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* 혜택 목록 */}
+        {!done && (
+          <>
+            <div className="bg-primary-soft rounded-[22px] p-[18px_20px] mb-7 border border-primary-bg">
+              {[
+                { emoji: '🚶', text: '집에서 가까운 일자리 우선 표시' },
+                { emoji: '⏱️', text: '도보·교통 소요시간 안내' },
+                { emoji: '🔔', text: '새 일자리가 근처에 올라오면 알림' },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3.5 py-[13px] ${i < 2 ? 'border-b border-primary-bg' : ''}`}
+                >
+                  <span className="text-2xl">{item.emoji}</span>
+                  <span className="text-base font-semibold text-[#424242]">{item.text}</span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              className="w-full py-[18px] bg-primary text-white border-none rounded-[28px] text-lg font-bold flex items-center justify-center gap-2.5 shadow-[0_3px_12px_rgba(230,81,0,0.25)]"
+              onClick={handleGrant}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-[3px] border-white/30 border-t-white rounded-full animate-spin" />
+                  위치 확인 중...
+                </>
+              ) : (
+                '📍 내 위치로 일자리 찾기'
+              )}
+            </button>
+            <button
+              className="w-full py-3.5 bg-transparent text-[#9E9E9E] border-none text-[15px] font-medium mt-2.5"
+              onClick={onSkip}
+            >
+              나중에 할게요
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────
+// 3) 메인 화면
+// ─────────────────────────────────────
+function MainScreen({ region, setRegion }) {
+  const [currentDistance, setCurrentDistance] = useState('3km');
+  const [activeTab, setActiveTab] = useState('home');
+  const [favorites, setFavorites] = useState([]);
+  const [profile, setProfile] = useState({
+    name: '김영수',
+    phone: '010-1234-5678',
+    age: 67,
+    gender: '남',
+    jobType: '',
+    workTime: '',
+    saved: false,
+  });
+
+  const toggleFav = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+  const filtered = getFiltered(currentDistance);
+
+  return (
+    <div className="flex flex-col min-h-screen" style={{ background: '#F7F5F2' }}>
+      {/* 상태바 */}
+      <div className="flex justify-between items-center px-5 pt-3 pb-1 text-[13px] font-semibold" style={{ color: '#888780' }}>
+        <span>9:41</span>
+        <div className="flex gap-1.5 items-center">
+          <span className="text-[11px]">●●●●○</span>
+          <span className="text-[11px]">WiFi</span>
+          <span className="text-sm">🔋</span>
+        </div>
+      </div>
+
+      {/* 헤더 */}
+      <div className="px-5 py-3 flex justify-between items-center" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center" style={{ background: '#E85C1E' }}>
+            <svg width="20" height="20" viewBox="0 0 52 52" fill="none">
+              <path d="M26 4C17.16 4 10 11.16 10 20C10 31.5 26 48 26 48C26 48 42 31.5 42 20C42 11.16 34.84 4 26 4Z" fill="rgba(255,255,255,0.2)" stroke="white" strokeWidth="1.5"/>
+              <circle cx="26" cy="15" r="4" fill="white"/>
+              <line x1="26" y1="19" x2="22" y2="27" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+              <line x1="26" y1="19" x2="30" y2="27" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+              <line x1="22" y1="23" x2="30" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="22" y1="27" x2="19" y2="33" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+              <line x1="30" y1="27" x2="33" y2="33" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <span className="text-[17px] font-bold tracking-tight"><span style={{ color: '#E85C1E' }}>일</span><span style={{ color: '#1A1A18' }}>손</span></span>
+        </div>
+        <button className="w-[34px] h-[34px] rounded-full flex items-center justify-center relative" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC' }}>
+          <span style={{ color: '#E85C1E', fontSize: '16px' }}>🔔</span>
+          <div className="absolute top-0 right-0 w-[7px] h-[7px] rounded-full" style={{ background: '#E85C1E', border: '1.5px solid white' }} />
+        </button>
+      </div>
+
+      {/* 위치 바 — 홈탭에서만 표시 */}
+      {activeTab === 'home' && (
+        <div className="px-5 py-3 flex items-center" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
+          <div className="flex items-center gap-2.5 cursor-pointer">
+            <span style={{ color: '#E85C1E', fontSize: '18px' }}>📍</span>
+            <div>
+              <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>{region || '위치 미설정'} 근처</div>
+              <div className="text-[12px] font-medium mt-px" style={{ color: '#888780' }}>지금 내 위치에서 찾는 중</div>
+            </div>
+            <span className="text-[12px] ml-1" style={{ color: '#B4B2A9' }}>▼</span>
+          </div>
+        </div>
+      )}
+
+      {/* 스크롤 영역 */}
+      <div className="overflow-y-auto pb-20 [-webkit-overflow-scrolling:touch]" style={{ height: 'calc(100vh - 150px)' }}>
+        {activeTab === 'home' && (
+          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} />
+        )}
+        {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} />}
+        {activeTab === 'history' && <HistoryView />}
+        {activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} />}
+      </div>
+
+      {/* 하단 탭 */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app flex justify-around pt-2.5 pb-7 z-[100]" style={{ background: '#FAFAF8', borderTop: '1px solid #EDE8E2' }}>
+        {[
+          { key: 'home', label: '홈' },
+          { key: 'favorites', label: '관심' },
+          { key: 'history', label: '지원내역' },
+          { key: 'profile', label: '내정보' },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            className="flex flex-col items-center gap-[3px] bg-transparent border-none py-1 px-3"
+            onClick={() => setActiveTab(tab.key)}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              {tab.key === 'home' && <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/>}
+              {tab.key === 'favorites' && <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/>}
+              {tab.key === 'history' && <><rect x="4" y="3" width="16" height="18" rx="2" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill="none"/><line x1="8" y1="8" x2="16" y2="8" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="12" x2="16" y2="12" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="16" x2="12" y2="16" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/></>}
+              {tab.key === 'profile' && <><circle cx="12" cy="8" r="4" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/><path d="M4 21v-1a6 6 0 0112 0v1" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill="none"/></>}
+            </svg>
+            <span className="text-[11px]" style={{ color: activeTab === tab.key ? '#E85C1E' : '#B4B2A9', fontWeight: activeTab === tab.key ? 600 : 400 }}>
+              {tab.label}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── 리스트 뷰 ───
+function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav }) {
+  return (
+    <div>
+      {/* 거리 필터 */}
+      <div className="px-[18px] pb-3 pt-1 flex gap-2 overflow-x-auto">
+        {DISTANCES.filter(d => d !== '전체').map((d) => (
+          <button
+            key={d}
+            className="py-2 px-4 rounded-[20px] text-[13px] font-semibold whitespace-nowrap transition-colors"
+            style={currentDistance === d
+              ? { background: '#FFF5F0', border: '1px solid #E85C1E', color: '#E85C1E' }
+              : { background: '#FAFAF8', border: '1px solid #EDE8E2', color: '#888780' }
+            }
+            onClick={() => setCurrentDistance(d)}
+          >
+            🚶 {d} 이내
+          </button>
+        ))}
+      </div>
+
+      {/* 섹션 헤더 */}
+      <div className="px-[18px] pb-2 flex justify-between items-center">
+        <h2 className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>🚶 가까운 일자리</h2>
+        <span className="text-[13px] font-semibold" style={{ color: '#E85C1E' }}>{filtered.length}건 있어요</span>
+      </div>
+
+      {/* 일자리 목록 */}
+      <div className="pb-5">
+        <div className="flex flex-col gap-3 px-[18px]">
+          {filtered.map((job, i) => (
+            <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 잡 카드 ───
+function JobCard({ job, index, isFav, toggleFav }) {
+  const payParts = job.pay.split(' ');
+  const payType = payParts[0];
+  const payAmount = payParts.slice(1).join(' ');
+  const firstTag = job.tags[0] || '';
+
+  return (
+    <div
+      className="rounded-[16px] p-[16px] w-full animate-fade-up"
+      style={{ background: '#FAFAF8', border: '1px solid #EDE8E2', animationDelay: `${Math.min(index, 6) * 0.05}s` }}
+    >
+      {/* 뱃지 */}
+      <div className="flex gap-2 mb-3 items-center flex-wrap">
+        <span className="text-[12px] font-semibold py-[4px] px-2.5 rounded-[20px]" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC', color: '#E85C1E' }}>
+          🚶 {job.distance}
+        </span>
+        <span className="text-[12px] font-medium py-[4px] px-2.5 rounded-[20px]" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#5F5E5A' }}>
+          걸어서 {job.walkTime}
+        </span>
+        {job.isNew && (
+          <span className="text-[11px] font-semibold py-[4px] px-2.5 rounded-[20px] text-white ml-auto" style={{ background: '#E85C1E' }}>방금 올라왔어요</span>
+        )}
+      </div>
+
+      {/* 본문 */}
+      <div className="flex gap-3 items-start">
+        <div className="w-[40px] h-[40px] rounded-[10px] flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#EDE8E2' }}>
+          {job.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[16px] font-bold" style={{ color: '#1A1A18' }}>{job.title}</div>
+          <div className="text-[12px] mt-0.5 truncate" style={{ color: '#B4B2A9' }}>{job.company} · {job.location}</div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-[20px] font-bold" style={{ color: '#E85C1E', letterSpacing: '-0.5px' }}>{payType} {payAmount}</span>
+            {firstTag && <span className="text-[13px]" style={{ color: '#888780' }}>/ {firstTag}</span>}
+          </div>
+          <div className="flex gap-1.5 flex-wrap mt-2">
+            {job.tags.slice(1).map((t) => (
+              <span key={t} className="py-[3px] px-2.5 rounded-[6px] text-[12px]" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#5F5E5A' }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 버튼 */}
+      <div className="mt-3 flex gap-2">
+        <button className="flex-1 h-[48px] text-white border-none rounded-[12px] text-[15px] font-semibold" style={{ background: '#E85C1E' }}>바로 지원하기</button>
+        <button className="w-[48px] h-[48px] border-none rounded-[12px] flex items-center justify-center flex-shrink-0" style={{ background: '#FEE500' }}>
+          <KakaoIcon size={20} />
+        </button>
+        <button
+          className="w-[48px] h-[48px] border-none rounded-[12px] flex items-center justify-center flex-shrink-0"
+          style={isFav
+            ? { background: '#FFF5F0', border: '2px solid #E85C1E' }
+            : { background: '#F7F5F2', border: '2px solid #EDE8E2' }
+          }
+          onClick={() => toggleFav(job.id)}
+        >
+          <span className="text-[24px]">{isFav ? '❤️' : '🤍'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── 마이페이지 ───
+function ProfileView({ region, profile, setProfile }) {
+
+  const jobTypes = ['경비·보안', '청소·미화', '주차·교통', '조경·관리', '조리·배식', '물류·배송', '시설·보수', '요양·돌봄', '운전·대리', '사무·행정'];
+  const avoidTimes = ['아침 일찍은 힘들어요', '저녁은 안 돼요', '주말은 쉬고 싶어요'];
+
+  return (
+    <div className="px-5 pt-5">
+      {/* 프로필 헤더 */}
+      <div className="flex items-center gap-4 mb-6 p-5 rounded-[16px]" style={{ background: '#FAFAF8', border: '1px solid #EDE8E2' }}>
+        <div className="w-[64px] h-[64px] rounded-full flex items-center justify-center text-[28px]" style={{ background: '#FFF5F0', border: '2px solid #FDDCCC' }}>
+          👤
+        </div>
+        <div className="flex-1">
+          <div className="text-[20px] font-bold" style={{ color: '#1A1A18' }}>{profile.name}님</div>
+          <div className="text-[14px] mt-1" style={{ color: '#888780' }}>{profile.age}세 · {profile.gender}</div>
+          <div className="text-[14px] mt-0.5" style={{ color: '#888780' }}>{profile.phone}</div>
+        </div>
+        <div className="flex items-center gap-1 py-1.5 px-3 rounded-full" style={{ background: '#FEE500' }}>
+          <KakaoIcon size={14} />
+          <span className="text-[12px] font-semibold" style={{ color: '#191919' }}>연결됨</span>
+        </div>
+      </div>
+
+      {/* 카카오에서 가져온 정보 */}
+      <div className="mb-5">
+        <div className="text-[14px] font-bold mb-3" style={{ color: '#1A1A18' }}>카카오에서 가져온 정보</div>
+        <div className="rounded-[16px] overflow-hidden" style={{ border: '1px solid #EDE8E2' }}>
+          {[
+            { label: '이름', value: profile.name },
+            { label: '전화번호', value: profile.phone },
+            { label: '나이', value: `${profile.age}세` },
+            { label: '성별', value: profile.gender },
+          ].map((item, i) => (
+            <div key={item.label} className="flex justify-between items-center px-4 py-3.5" style={{ background: '#FAFAF8', borderBottom: i < 3 ? '1px solid #EDE8E2' : 'none' }}>
+              <span className="text-[15px]" style={{ color: '#888780' }}>{item.label}</span>
+              <span className="text-[15px] font-semibold" style={{ color: '#1A1A18' }}>{item.value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="text-[12px] mt-2" style={{ color: '#B4B2A9' }}>카카오 계정 정보는 자동으로 가져와요</div>
+      </div>
+
+      {/* 거주지 — 위치동의에서 자동 설정 */}
+      <div className="mb-5">
+        <div className="text-[14px] font-bold mb-3" style={{ color: '#1A1A18' }}>내가 사는 동네</div>
+        <div
+          className="w-full flex items-center gap-3 px-4 py-4 rounded-[12px]"
+          style={{ background: region ? '#FFF5F0' : '#FAFAF8', border: region ? '1px solid #FDDCCC' : '1px solid #EDE8E2' }}
+        >
+          <span className="text-[18px]">📍</span>
+          <span className="text-[16px] font-semibold" style={{ color: region ? '#E85C1E' : '#B4B2A9' }}>
+            {region || '위치 동의 후 자동 설정돼요'}
+          </span>
+          {region && <span className="ml-auto text-[12px] py-1 px-2.5 rounded-full" style={{ background: '#E85C1E', color: 'white' }}>자동</span>}
+        </div>
+      </div>
+
+      {/* 직접 입력 — 희망 분야 */}
+      <div className="mb-5">
+        <div className="text-[14px] font-bold mb-3" style={{ color: '#1A1A18' }}>어떤 일을 하고 싶으세요?</div>
+        <div className="flex flex-wrap gap-2">
+          {jobTypes.map((type) => (
+            <button
+              key={type}
+              className="py-2.5 px-4 rounded-full text-[14px] font-medium transition-colors"
+              style={profile.jobType === type
+                ? { background: '#FFF5F0', border: '1px solid #E85C1E', color: '#E85C1E' }
+                : { background: '#FAFAF8', border: '1px solid #EDE8E2', color: '#888780' }
+              }
+              onClick={() => setProfile(p => ({ ...p, jobType: p.jobType === type ? '' : type }))}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 이 시간은 안 돼요 */}
+      <div className="mb-8">
+        <div className="text-[14px] font-bold mb-1" style={{ color: '#1A1A18' }}>이 시간은 안 돼요</div>
+        <div className="text-[12px] mb-3" style={{ color: '#B4B2A9' }}>해당되는 것만 골라주세요 (선택 안 하면 아무 때나 OK)</div>
+        <div className="flex flex-wrap gap-2">
+          {avoidTimes.map((item) => {
+            const selected = (profile.avoidTimes || []).includes(item);
+            return (
+              <button
+                key={item}
+                className="py-2.5 px-4 rounded-full text-[14px] font-medium transition-colors"
+                style={selected
+                  ? { background: '#FFF5F0', border: '1px solid #E85C1E', color: '#E85C1E' }
+                  : { background: '#FAFAF8', border: '1px solid #EDE8E2', color: '#888780' }
+                }
+                onClick={() => setProfile(p => ({
+                  ...p,
+                  avoidTimes: selected
+                    ? (p.avoidTimes || []).filter(t => t !== item)
+                    : [...(p.avoidTimes || []), item]
+                }))}
+              >
+                {selected ? '✓ ' : ''}{item}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 저장 버튼 */}
+      <button
+        className="w-full py-4 rounded-[12px] text-[17px] font-bold text-white mb-5"
+        style={{ background: profile.saved ? '#888780' : '#E85C1E' }}
+        onClick={() => {
+          setProfile(p => ({ ...p, saved: true }));
+          setTimeout(() => setProfile(p => ({ ...p, saved: false })), 2000);
+        }}
+      >
+        {profile.saved ? '✅ 저장했어요!' : '저장하기'}
+      </button>
+
+      {/* 기타 메뉴 */}
+      <div className="rounded-[16px] overflow-hidden mb-8" style={{ border: '1px solid #EDE8E2' }}>
+        {[
+          { icon: '📞', label: '고객센터 전화', sub: '1588-0000' },
+          { icon: '📄', label: '이용약관' },
+          { icon: '🔒', label: '개인정보처리방침' },
+          { icon: '🚪', label: '로그아웃', danger: true },
+        ].map((item, i) => (
+          <button
+            key={item.label}
+            className="w-full flex items-center gap-3 px-4 py-4 text-left"
+            style={{ background: '#FAFAF8', borderBottom: i < 3 ? '1px solid #EDE8E2' : 'none' }}
+          >
+            <span className="text-[18px]">{item.icon}</span>
+            <span className="text-[15px] font-medium flex-1" style={{ color: item.danger ? '#DC2626' : '#1A1A18' }}>{item.label}</span>
+            {item.sub && <span className="text-[14px] font-bold" style={{ color: '#E85C1E' }}>{item.sub}</span>}
+            {!item.sub && <span className="text-[13px]" style={{ color: '#B4B2A9' }}>▶</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── 관심 목록 ───
+function FavoritesView({ favorites, toggleFav }) {
+  const favJobs = JOBS.filter(j => favorites.includes(j.id));
+
+  if (favJobs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center px-5 pt-20">
+        <div className="text-[48px] mb-4">♡</div>
+        <div className="text-[18px] font-bold mb-2" style={{ color: '#1A1A18' }}>아직 관심 일자리가 없어요</div>
+        <div className="text-[15px] text-center leading-relaxed" style={{ color: '#888780' }}>
+          일자리 카드의 ♡를 눌러보세요
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-[18px] pt-4">
+      <div className="flex justify-between items-center mb-3">
+        <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>❤️ 관심 일자리</div>
+        <span className="text-[13px] font-semibold" style={{ color: '#E85C1E' }}>{favJobs.length}건</span>
+      </div>
+      <div className="flex flex-col gap-3">
+        {favJobs.map((job, i) => (
+          <JobCard key={job.id} job={job} index={i} isFav={true} toggleFav={toggleFav} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── 지원내역 ───
+function HistoryView() {
+  return (
+    <div className="flex flex-col items-center justify-center px-5 pt-20">
+      <div className="text-[48px] mb-4">📋</div>
+      <div className="text-[18px] font-bold mb-2" style={{ color: '#1A1A18' }}>아직 지원한 곳이 없어요</div>
+      <div className="text-[15px] text-center leading-relaxed" style={{ color: '#888780' }}>
+        일자리에 지원하면<br />여기서 확인할 수 있어요
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────
+// 메인 Export
+// ─────────────────────────────────────
+export default function HomePage() {
+  const [screen, setScreen] = useState('login');
+  const [region, setRegion] = useState('');
+
+  return (
+    <div className="flex justify-center min-h-screen bg-[#f0f0ed]">
+      <div className="max-w-app w-full min-h-screen bg-[#FAFAF8] relative overflow-hidden sm:rounded-[32px] sm:shadow-[0_8px_40px_rgba(0,0,0,0.12)] sm:my-5 sm:min-h-[90vh]">
+        {screen === 'login' && <LoginScreen onNext={() => setScreen('location')} />}
+        {screen === 'location' && (
+          <LocationScreen
+            onGranted={(r) => { setRegion(r); setScreen('main'); }}
+            onSkip={() => { setRegion('위치 미설정'); setScreen('main'); }}
+          />
+        )}
+        {screen === 'main' && <MainScreen region={region} setRegion={setRegion} />}
+      </div>
+    </div>
+  );
+}
