@@ -1,16 +1,70 @@
 name: 나라장터 입찰공고 알림
 
 on:
+  schedule:
+    - cron: '0 0 * * 1-5'
   workflow_dispatch:
 
 jobs:
   nara-alert:
     runs-on: ubuntu-latest
     steps:
-      - name: Slack 테스트
+      - name: 공고 조회 및 Slack 발송
         run: |
-          curl -s -o /dev/null -w "%{http_code}" -X POST "$SLACK_WEBHOOK_URL" \
-            -H 'Content-Type: application/json' \
-            -d '{"text":"✅ 슬랙봇 연결 테스트!"}'
+          python3 << 'PYEOF'
+          import urllib.request, urllib.parse, json, os
+          from datetime import datetime
+
+          KEY = os.environ['NARA_API_KEY']
+          SLACK = os.environ['SLACK_WEBHOOK_URL']
+          TODAY = datetime.now().strftime('%Y%m%d') + '0000'
+
+          KEYWORDS = ['AI 활용 용역', '인공지능 용역', 'AI 시스템 구축', 'AI 플랫폼 개발', 'AI 솔루션', '디지털 전환 용역']
+
+          def fetch(kw):
+            q = urllib.parse.urlencode({'pageNo':'1','numOfRows':'10','inqryDiv':'1','inqryBgnDt':TODAY,'inqryEndDt':TODAY,'bidNtceNm':kw,'type':'json'})
+            url = f'https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc?serviceKey={KEY}&{q}'
+            try:
+              with urllib.request.urlopen(url, timeout=10) as r:
+                d = json.loads(r.read())
+              items = d.get('response',{}).get('body',{}).get('items',{})
+              if not items: return []
+              item = items.get('item',[])
+              return item if isinstance(item,list) else [item]
+            except Exception as e:
+              print(f'오류: {kw} - {e}')
+              return []
+
+          def slack(payload):
+            data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+            req = urllib.request.Request(SLACK, data=data, headers={'Content-Type':'application/json'})
+            urllib.request.urlopen(req)
+
+          all_bids = []
+          for kw in KEYWORDS:
+            all_bids.extend(fetch(kw))
+
+          seen = {}
+          for b in all_bids:
+            seen[b.get('bidNtceNo','')] = b
+          unique = list(seen.values())
+
+          print(f'{len(unique)}건 발견')
+
+          if not unique:
+            slack({'text':'📋 오늘은 새로운 AI 관련 입찰공고가 없어요.'})
+          else:
+            d = datetime.now().strftime('%m월 %d일')
+            blocks = [
+              {'type':'header','text':{'type':'plain_text','text':f'🤖 {d} AI 관련 입찰공고 {len(unique)}건'}},
+              {'type':'divider'}
+            ]
+            for b in unique:
+              dt = b.get('bidClseDt','')
+              dt_str = f"{dt[:4]}.{dt[4:6]}.{dt[6:8]}" if len(dt)>=8 else '미정'
+              blocks.append({'type':'section','text':{'type':'mrkdwn','text':f"*{b.get('bidNtceNm','')}*\n🏢 {b.get('ntceInsttNm','')}\n📅 마감: {dt_str}"}})
+            slack({'blocks':blocks})
+          PYEOF
         env:
+          NARA_API_KEY: ${{ secrets.NARA_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
