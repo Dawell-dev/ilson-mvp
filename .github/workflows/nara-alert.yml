@@ -9,8 +9,8 @@ jobs:
     steps:
       - name: Slack 테스트
         run: |
-          curl -X POST "$SLACK_WEBHOOK_URL" \
+          curl -s -o /dev/null -w "%{http_code}" -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
-            -d '{"text":"✅ 슬랙봇 연결 성공!"}'
+            -d '{"text":"✅ 슬랙봇 연결 테스트!"}'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
