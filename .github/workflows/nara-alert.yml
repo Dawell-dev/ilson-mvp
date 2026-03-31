@@ -1,59 +1,16 @@
 name: 나라장터 입찰공고 알림
 
 on:
-  schedule:
-    - cron: '0 0 * * 1-5'
   workflow_dispatch:
 
 jobs:
   nara-alert:
     runs-on: ubuntu-latest
     steps:
-      - name: 공고 조회 및 Slack 발송
+      - name: Slack 테스트
         run: |
-          TODAY=$(date +%Y%m%d)0000
-          RESULT=""
-
-          for KEYWORD in "AI 활용 용역" "인공지능 용역" "AI 시스템 구축" "AI 플랫폼 개발" "챗봇 구축" "AI 솔루션" "디지털 전환 용역"; do
-            ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$KEYWORD'))")
-            URL="https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc?serviceKey=$NARA_API_KEY&pageNo=1&numOfRows=10&inqryDiv=1&inqryBgnDt=$TODAY&inqryEndDt=$TODAY&bidNtceNm=$ENC&type=json"
-            DATA=$(curl -s "$URL")
-            ITEMS=$(echo "$DATA" | python3 -c "
-          import json,sys
-          d=json.load(sys.stdin)
-          items=d.get('response',{}).get('body',{}).get('items',{})
-          if not items: 
-            exit()
-          item=items.get('item',[])
-          if isinstance(item,dict): item=[item]
-          for b in item:
-            print(b.get('bidNtceNm','')+'|'+b.get('ntceInsttNm','')+'|'+b.get('bidClseDt','')[:8])
-          " 2>/dev/null)
-            RESULT="$RESULT$ITEMS"$'\n'
-          done
-
-          COUNT=$(echo "$RESULT" | grep -c '|' || true)
-
-          if [ "$COUNT" -eq 0 ]; then
-            curl -s -X POST "$SLACK_WEBHOOK_URL" \
-              -H 'Content-Type: application/json' \
-              -d '{"text":"📋 오늘은 새로운 AI 관련 입찰공고가 없어요."}'
-          else
-            TODAY_STR=$(date '+%m월 %d일')
-            MSG="🤖 ${TODAY_STR} AI 관련 입찰공고 ${COUNT}건\n\n"
-            while IFS='|' read -r NAME ORG DATE; do
-              [ -z "$NAME" ] && continue
-              MSG="${MSG}• *${NAME}*\n  🏢 ${ORG} | 📅 ${DATE}\n\n"
-            done <<< "$RESULT"
-            python3 -c "
-          import json, urllib.request, os
-          msg = '''$MSG'''
-          payload = {'text': msg}
-          data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-          req = urllib.request.Request(os.environ['SLACK_WEBHOOK_URL'], data=data, headers={'Content-Type':'application/json'})
-          urllib.request.urlopen(req)
-          "
-          fi
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"✅ 슬랙봇 연결 성공!"}'
         env:
-          NARA_API_KEY: ${{ secrets.NARA_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
