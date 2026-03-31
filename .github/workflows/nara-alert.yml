@@ -9,86 +9,51 @@ jobs:
   nara-alert:
     runs-on: ubuntu-latest
     steps:
-      - name: 나라장터 공고 조회 및 Slack 발송
-        shell: python3 {0}
+      - name: 공고 조회 및 Slack 발송
         run: |
-          import urllib.request
-          import urllib.parse
-          import json
-          import os
-          from datetime import datetime
+          TODAY=$(date +%Y%m%d)0000
+          RESULT=""
 
-          NARA_KEY = os.environ['NARA_API_KEY']
-          SLACK_URL = os.environ['SLACK_WEBHOOK_URL']
+          for KEYWORD in "AI 활용 용역" "인공지능 용역" "AI 시스템 구축" "AI 플랫폼 개발" "챗봇 구축" "AI 솔루션" "디지털 전환 용역"; do
+            ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$KEYWORD'))")
+            URL="https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc?serviceKey=$NARA_API_KEY&pageNo=1&numOfRows=10&inqryDiv=1&inqryBgnDt=$TODAY&inqryEndDt=$TODAY&bidNtceNm=$ENC&type=json"
+            DATA=$(curl -s "$URL")
+            ITEMS=$(echo "$DATA" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          items=d.get('response',{}).get('body',{}).get('items',{})
+          if not items: 
+            exit()
+          item=items.get('item',[])
+          if isinstance(item,dict): item=[item]
+          for b in item:
+            print(b.get('bidNtceNm','')+'|'+b.get('ntceInsttNm','')+'|'+b.get('bidClseDt','')[:8])
+          " 2>/dev/null)
+            RESULT="$RESULT$ITEMS"$'\n'
+          done
 
-          KEYWORDS = [
-            "AI 활용 용역", "인공지능 용역", "AI 시스템 구축",
-            "AI 플랫폼 개발", "챗봇 구축", "AI 솔루션",
-            "디지털 전환 용역", "AI 도입"
-          ]
+          COUNT=$(echo "$RESULT" | grep -c '|' || true)
 
-          def today():
-            return datetime.now().strftime('%Y%m%d') + '0000'
-
-          def fetch_bids(keyword):
-            query = urllib.parse.urlencode({
-              'pageNo': '1', 'numOfRows': '10',
-              'inqryDiv': '1', 'inqryBgnDt': today(),
-              'inqryEndDt': today(), 'bidNtceNm': keyword, 'type': 'json'
-            })
-            url = f'https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc?serviceKey={NARA_KEY}&{query}'
-            try:
-              with urllib.request.urlopen(url, timeout=10) as r:
-                data = json.loads(r.read().decode('utf-8'))
-              items = data.get('response',{}).get('body',{}).get('items',{})
-              if not items: return []
-              item = items.get('item', [])
-              return item if isinstance(item, list) else [item]
-            except Exception as e:
-              print(f'오류: {keyword} - {e}')
-              return []
-
-          def format_price(amt):
-            if not amt or amt == '0': return '미공개'
-            n = int(float(amt))
-            if n >= 100000000: return f'{n/100000000:.1f}억원'
-            if n >= 10000: return f'{n//10000:,}만원'
-            return f'{n:,}원'
-
-          def format_date(dt):
-            if not dt or len(dt) < 8: return '미정'
-            return f'{dt[:4]}.{dt[4:6]}.{dt[6:8]}'
-
-          def send_slack(payload):
-            data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-            req = urllib.request.Request(SLACK_URL, data=data, headers={'Content-Type': 'application/json; charset=utf-8'})
-            urllib.request.urlopen(req)
-
-          all_bids = []
-          for kw in KEYWORDS:
-            all_bids.extend(fetch_bids(kw))
-
-          seen = {}
-          for b in all_bids:
-            seen[b.get('bidNtceNo','')] = b
-          unique = list(seen.values())
-
-          print(f'총 {len(unique)}건 발견')
-
-          if not unique:
-            send_slack({'text': '📋 오늘은 새로운 AI 관련 입찰공고가 없어요.'})
-          else:
-            today_str = datetime.now().strftime('%m월 %d일')
-            blocks = [
-              {'type':'header','text':{'type':'plain_text','text':f'🤖 {today_str} AI 관련 입찰공고 {len(unique)}건'}},
-              {'type':'divider'},
-            ]
-            for b in unique:
-              blocks.append({
-                'type':'section',
-                'text':{'type':'mrkdwn','text':f"*{b.get('bidNtceNm','')}*\n🏢 {b.get('ntceInsttNm','')}\n📅 마감: {format_date(b.get('bidClseDt',''))}\n💰 {format_price(b.get('asignBdgtAmt','0'))}"}
-              })
-            send_slack({'blocks': blocks})
+          if [ "$COUNT" -eq 0 ]; then
+            curl -s -X POST "$SLACK_WEBHOOK_URL" \
+              -H 'Content-Type: application/json' \
+              -d '{"text":"📋 오늘은 새로운 AI 관련 입찰공고가 없어요."}'
+          else
+            TODAY_STR=$(date '+%m월 %d일')
+            MSG="🤖 ${TODAY_STR} AI 관련 입찰공고 ${COUNT}건\n\n"
+            while IFS='|' read -r NAME ORG DATE; do
+              [ -z "$NAME" ] && continue
+              MSG="${MSG}• *${NAME}*\n  🏢 ${ORG} | 📅 ${DATE}\n\n"
+            done <<< "$RESULT"
+            python3 -c "
+          import json, urllib.request, os
+          msg = '''$MSG'''
+          payload = {'text': msg}
+          data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+          req = urllib.request.Request(os.environ['SLACK_WEBHOOK_URL'], data=data, headers={'Content-Type':'application/json'})
+          urllib.request.urlopen(req)
+          "
+          fi
         env:
           NARA_API_KEY: ${{ secrets.NARA_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
