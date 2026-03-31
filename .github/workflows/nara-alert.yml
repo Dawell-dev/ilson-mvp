@@ -10,81 +10,82 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 나라장터 공고 조회 및 Slack 발송
+        shell: python3 {0}
         run: |
-          node << 'EOF'
-          const keywords = [
-            "AI 활용 용역",
-            "인공지능 용역",
-            "AI 시스템 구축",
-            "AI 플랫폼 개발",
-            "챗봇 구축",
-            "AI 솔루션",
-            "디지털 전환 용역",
-            "AI 도입",
-          ];
+          import urllib.request
+          import urllib.parse
+          import json
+          import os
+          from datetime import datetime
 
-          const NARA_KEY = process.env.NARA_API_KEY;
-          const SLACK_URL = process.env.SLACK_WEBHOOK_URL;
+          NARA_KEY = os.environ['NARA_API_KEY']
+          SLACK_URL = os.environ['SLACK_WEBHOOK_URL']
 
-          function today() {
-            const d = new Date();
-            const y = d.getFullYear();
-            const m = String(d.getMonth()+1).padStart(2,'0');
-            const day = String(d.getDate()).padStart(2,'0');
-            return `${y}${m}${day}0000`;
-          }
+          KEYWORDS = [
+            "AI 활용 용역", "인공지능 용역", "AI 시스템 구축",
+            "AI 플랫폼 개발", "챗봇 구축", "AI 솔루션",
+            "디지털 전환 용역", "AI 도입"
+          ]
 
-          async function fetchBids(keyword) {
-            const params = new URLSearchParams({
-              serviceKey: NARA_KEY, pageNo:'1', numOfRows:'10',
-              inqryDiv:'1', inqryBgnDt: today(), inqryEndDt: today(),
-              bidNtceNm: keyword, type:'json'
-            });
-            const url = `https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc?${params}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            const items = data?.response?.body?.items?.item;
-            if (!items) return [];
-            return Array.isArray(items) ? items : [items];
-          }
+          def today():
+            return datetime.now().strftime('%Y%m%d') + '0000'
 
-          function formatPrice(amt) {
-            if (!amt || amt === '0') return '미공개';
-            const n = Number(amt);
-            if (n >= 100000000) return `${(n/100000000).toFixed(1)}억원`;
-            if (n >= 10000) return `${Math.floor(n/10000).toLocaleString()}만원`;
-            return `${n.toLocaleString()}원`;
-          }
+          def fetch_bids(keyword):
+            params = urllib.parse.urlencode({
+              'serviceKey': NARA_KEY, 'pageNo': '1', 'numOfRows': '10',
+              'inqryDiv': '1', 'inqryBgnDt': today(), 'inqryEndDt': today(),
+              'bidNtceNm': keyword, 'type': 'json'
+            })
+            url = f'https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc?{params}'
+            try:
+              with urllib.request.urlopen(url) as r:
+                data = json.loads(r.read())
+              items = data.get('response',{}).get('body',{}).get('items',{})
+              if not items: return []
+              item = items.get('item', [])
+              return item if isinstance(item, list) else [item]
+            except:
+              return []
 
-          const allBids = [];
-          for (const kw of keywords) {
-            const bids = await fetchBids(kw);
-            allBids.push(...bids);
-          }
+          def format_price(amt):
+            if not amt or amt == '0': return '미공개'
+            n = int(amt)
+            if n >= 100000000: return f'{n/100000000:.1f}억원'
+            if n >= 10000: return f'{n//10000:,}만원'
+            return f'{n:,}원'
 
-          const unique = Array.from(new Map(allBids.map(b=>[b.bidNtceNo,b])).values());
+          def format_date(dt):
+            if not dt or len(dt) < 8: return '미정'
+            return f'{dt[:4]}.{dt[4:6]}.{dt[6:8]}'
 
-          if (unique.length === 0) {
-            await fetch(SLACK_URL, {
-              method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({text:'📋 오늘은 새로운 AI 관련 입찰공고가 없어요.'})
-            });
-          } else {
-            const dateStr = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'});
-            const blocks = [
-              {type:'header', text:{type:'plain_text', text:`🤖 ${dateStr} AI 관련 입찰공고 ${unique.length}건`}},
-              {type:'divider'},
-              ...unique.map(b=>({
-                type:'section',
-                text:{type:'mrkdwn', text:`*${b.bidNtceNm}*\n🏢 ${b.ntceInsttNm}\n📅 마감: ${b.bidClseDt?.slice(0,8).replace(/(\d{4})(\d{2})(\d{2})/,'$1.$2.$3')}\n💰 ${formatPrice(b.asignBdgtAmt)}`}
-              }))
-            ];
-            await fetch(SLACK_URL, {
-              method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({blocks})
-            });
-          }
-          EOF
+          all_bids = []
+          for kw in KEYWORDS:
+            all_bids.extend(fetch_bids(kw))
+
+          seen = {}
+          for b in all_bids:
+            seen[b.get('bidNtceNo','')] = b
+          unique = list(seen.values())
+
+          def send_slack(payload):
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(SLACK_URL, data=data, headers={'Content-Type': 'application/json'})
+            urllib.request.urlopen(req)
+
+          if not unique:
+            send_slack({'text': '📋 오늘은 새로운 AI 관련 입찰공고가 없어요.'})
+          else:
+            today_str = datetime.now().strftime('%m월 %d일')
+            blocks = [
+              {'type':'header','text':{'type':'plain_text','text':f'🤖 {today_str} AI 관련 입찰공고 {len(unique)}건'}},
+              {'type':'divider'},
+            ]
+            for b in unique:
+              blocks.append({
+                'type':'section',
+                'text':{'type':'mrkdwn','text':f"*{b.get('bidNtceNm','')}*\n🏢 {b.get('ntceInsttNm','')}\n📅 마감: {format_date(b.get('bidClseDt',''))}\n💰 {format_price(b.get('asignBdgtAmt','0'))}"}
+              })
+            send_slack({'blocks': blocks})
         env:
           NARA_API_KEY: ${{ secrets.NARA_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
