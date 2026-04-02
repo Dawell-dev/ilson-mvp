@@ -2,7 +2,7 @@ name: 나라장터 입찰공고 알림
 
 on:
   schedule:
-    - cron: '0 0 * * 1-5'
+    - cron: '0 22 * * 0-4'
   workflow_dispatch:
 
 jobs:
@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 공고 조회 및 Slack 발송
+        shell: python3 {0}
         run: |
-          python3 << 'PYEOF'
           import urllib.request, urllib.parse, json, os
           from datetime import datetime
 
@@ -64,7 +64,6 @@ jobs:
               dt_str = f"{dt[:4]}.{dt[4:6]}.{dt[6:8]}" if len(dt)>=8 else '미정'
               blocks.append({'type':'section','text':{'type':'mrkdwn','text':f"*{b.get('bidNtceNm','')}*\n🏢 {b.get('ntceInsttNm','')}\n📅 마감: {dt_str}"}})
             slack({'blocks':blocks})
-          PYEOF
         env:
           NARA_API_KEY: ${{ secrets.NARA_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
