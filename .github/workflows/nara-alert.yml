@@ -96,8 +96,12 @@ jobs:
               for kw in KEYWORDS:
                 try:
                   page.goto('https://www.k-apt.go.kr/bid/bidList.do', timeout=30000, wait_until='networkidle')
-                  page.fill('input[name="searchValue"]', kw)
-                  page.click('button:has-text("검색"), .btn_search')
+
+                  # 실제 K-APT 검색창 name="bidTitle" 사용
+                  page.fill('input[name="bidTitle"]', kw)
+
+                  # 검색 버튼 클릭
+                  page.click('button.btn_search')
                   page.wait_for_load_state('networkidle', timeout=15000)
 
                   rows = page.query_selector_all('table tbody tr')
