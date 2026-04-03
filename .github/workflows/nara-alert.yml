@@ -66,57 +66,120 @@ jobs:
     runs-on: ubuntu-latest
     needs: nara-alert
     steps:
-      - name: K-APT 입찰공고 링크 Slack 발송
+      - name: Playwright 설치
+        run: |
+          pip install playwright --break-system-packages
+          playwright install chromium --with-deps
+
+      - name: K-APT 입찰공고 크롤링 및 Slack 발송
         shell: python3 {0}
         run: |
-          import urllib.request, urllib.parse, json, os
+          import json, os, urllib.request, urllib.parse
           from datetime import datetime, timedelta
+          from playwright.sync_api import sync_playwright
 
-          SLACK = os.environ['SLACK_WEBHOOK_URL']
-
-          today = datetime.now()
-          date_end   = today.strftime('%Y-%m-%d')
-          date_start = (today - timedelta(days=30)).strftime('%Y-%m-%d')
-          d = today.strftime('%m월 %d일')
-
+          SLACK    = os.environ['SLACK_WEBHOOK_URL']
+          BASE_URL = 'https://www.k-apt.go.kr'
           KEYWORDS = ['미화용역', '경비용역']
 
-          def make_url(kw):
-            params = urllib.parse.urlencode({
-              'searchBidGb': 'bid_gb_1',
-              'bidTitle': kw,
-              'aptName': '',
-              'searchDateGb': 'reg',
-              'dateStart': date_start,
-              'dateEnd': date_end,
-              'dateArea': '1',
-              'bidState': ''
-            })
-            return f'https://www.k-apt.go.kr/bid/bidList.do?{params}'
+          today      = datetime.now()
+          date_end   = today.strftime('%Y-%m-%d')
+          date_start = (today - timedelta(days=30)).strftime('%Y-%m-%d')
 
           def slack(payload):
             data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-            req = urllib.request.Request(SLACK, data=data, headers={'Content-Type': 'application/json'})
+            req  = urllib.request.Request(SLACK, data=data, headers={'Content-Type': 'application/json'})
             urllib.request.urlopen(req)
 
-          blocks = [
-            {'type':'header','text':{'type':'plain_text','text':f'🏢 {d} K-APT 입찰공고 확인'}},
-            {'type':'divider'},
-            {'type':'section','text':{'type':'mrkdwn','text':'아래 링크를 클릭하면 최신 공고를 바로 확인할 수 있어요.'}}
-          ]
+          def crawl_kapt():
+            bids = []
+            with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              ctx     = browser.new_context(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+              page    = ctx.new_page()
 
-          for kw in KEYWORDS:
-            url = make_url(kw)
-            blocks.append({
-              'type': 'section',
-              'text': {'type': 'mrkdwn', 'text': f'*{kw}* 검색 결과'},
-              'accessory': {
-                'type': 'button',
-                'text': {'type': 'plain_text', 'text': f'{kw} 보기'},
-                'url': url
-              }
-            })
+              for kw in KEYWORDS:
+                try:
+                  params = urllib.parse.urlencode({
+                    'searchBidGb': 'bid_gb_1',
+                    'bidTitle':    kw,
+                    'aptName':     '',
+                    'searchDateGb':'reg',
+                    'dateStart':   date_start,
+                    'dateEnd':     date_end,
+                    'dateArea':    '1',
+                    'bidState':    ''
+                  })
+                  url = f'{BASE_URL}/bid/bidList.do?{params}'
+                  page.goto(url, timeout=30000, wait_until='networkidle')
 
-          slack({'blocks': blocks})
+                  rows = page.query_selector_all('table tbody tr')
+                  print(f'[{kw}] {len(rows)}개 행 발견')
+
+                  for row in rows:
+                    try:
+                      cells = row.query_selector_all('td')
+                      if len(cells) < 6: continue
+
+                      status = cells[5].inner_text().strip()
+                      if '마감' in status:
+                        continue
+
+                      title        = cells[3].inner_text().strip()
+                      deadline     = cells[4].inner_text().strip()
+                      kind         = cells[1].inner_text().strip()
+                      complex_name = cells[6].inner_text().strip() if len(cells) > 6 else ''
+
+                      # 공고 상세 링크 추출
+                      anchor = cells[3].query_selector('a')
+                      if anchor:
+                        href     = anchor.get_attribute('href') or ''
+                        detail_url = BASE_URL + href if href.startswith('/') else href
+                      else:
+                        detail_url = url
+
+                      if title and not any(b['title'] == title for b in bids):
+                        bids.append({
+                          'title':    title,
+                          'kind':     kind,
+                          'deadline': deadline,
+                          'complex':  complex_name,
+                          'url':      detail_url
+                        })
+                    except:
+                      continue
+
+                except Exception as e:
+                  print(f'크롤링 오류 [{kw}]: {e}')
+                  continue
+
+              browser.close()
+            return bids
+
+          bids = crawl_kapt()
+          print(f'K-APT 최종 {len(bids)}건')
+
+          if not bids:
+            slack({'text': '🏢 오늘은 새로운 K-APT 미화용역·경비용역 공고가 없어요.'})
+          else:
+            d      = today.strftime('%m월 %d일')
+            blocks = [
+              {'type':'header','text':{'type':'plain_text','text':f'🏢 {d} K-APT 신규 입찰공고 {len(bids)}건 (미화·경비용역)'}},
+              {'type':'divider'}
+            ]
+            for b in bids:
+              blocks.append({
+                'type': 'section',
+                'text': {'type': 'mrkdwn', 'text':
+                  f"*{b['title']}*\n"
+                  f"🏘️ {b['complex']}  |  📂 {b['kind']}\n"
+                  f"📅 마감: {b['deadline']}"},
+                'accessory': {
+                  'type': 'button',
+                  'text': {'type': 'plain_text', 'text': 'K-APT 바로가기'},
+                  'url':  b['url']
+                }
+              })
+            slack({'blocks': blocks})
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
