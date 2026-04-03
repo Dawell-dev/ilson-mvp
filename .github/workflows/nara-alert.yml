@@ -79,7 +79,7 @@ jobs:
           from playwright.sync_api import sync_playwright
 
           SLACK = os.environ['SLACK_WEBHOOK_URL']
-          KEYWORDS = ['청소', '경비', '시설관리', '건물관리', '미화']
+          KEYWORDS = ['미화용역', '경비용역']
 
           def slack(payload):
             data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
@@ -96,8 +96,6 @@ jobs:
               for kw in KEYWORDS:
                 try:
                   page.goto('https://www.k-apt.go.kr/bid/bidList.do', timeout=30000, wait_until='networkidle')
-
-                  # 입찰공고명 검색어 입력 후 검색
                   page.fill('input[name="searchValue"]', kw)
                   page.click('button:has-text("검색"), .btn_search')
                   page.wait_for_load_state('networkidle', timeout=15000)
@@ -128,11 +126,11 @@ jobs:
           print(f'K-APT 최종 {len(bids)}건')
 
           if not bids:
-            slack({'text': '🏢 오늘은 새로운 K-APT 관련 입찰공고가 없어요.'})
+            slack({'text': '🏢 오늘은 새로운 K-APT 미화용역·경비용역 공고가 없어요.'})
           else:
             d = datetime.now().strftime('%m월 %d일')
             blocks = [
-              {'type':'header','text':{'type':'plain_text','text':f'🏢 {d} K-APT 입찰공고 {len(bids)}건'}},
+              {'type':'header','text':{'type':'plain_text','text':f'🏢 {d} K-APT 입찰공고 {len(bids)}건 (미화용역·경비용역)'}},
               {'type':'divider'}
             ]
             for b in bids:
