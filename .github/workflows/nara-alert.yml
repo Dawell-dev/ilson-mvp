@@ -46,7 +46,6 @@ jobs:
           for b in all_bids:
             seen[b.get('bidNtceNo','')] = b
           unique = list(seen.values())
-          print(f'나라장터 {len(unique)}건 발견')
 
           if not unique:
             slack({'text': '📋 오늘은 새로운 AI 관련 나라장터 공고가 없어요.'})
@@ -91,22 +90,32 @@ jobs:
             req  = urllib.request.Request(SLACK, data=data, headers={'Content-Type': 'application/json'})
             urllib.request.urlopen(req)
 
-          def make_detail_url(kw, bid_num):
-            params = urllib.parse.urlencode({
-              'searchBidGb':'bid_gb_1', 'bidTitle':kw, 'aptName':'',
-              'searchDateGb':'reg', 'dateStart':date_start, 'dateEnd':date_end,
-              'dateArea':'1', 'bidState':'', 'codeAuth':'', 'codeWay':'',
-              'codeAuthSub':'', 'codeSucWay':'', 'codeClassifyType1':'',
-              'codeClassifyType2':'', 'codeClassifyType3':'', 'pageNo':'1',
-              'type':'4', 'bidArea':'', 'bidNum':bid_num, 'bidNo':'',
-              'dTime':str(int(today.timestamp()*1000)),
-              'mainKaptCode':'', 'aptCode':''
-            })
-            return f'{BASE_URL}/bid/bidDetail.do?{params}'
+          def extract_bid_info(row_html):
+            # KG2B 타입: kg2b_XXXXX
+            m = re.search(r'(?:kg2b|kapt)_\d+', row_html)
+            if m:
+              return ('kg2b', m.group(0))
+            # K-APT 타입: goView('XXXXXXXXXXXXXXXXX')
+            m = re.search(r"goView\('(\d+)'\)", row_html)
+            if m:
+              return ('kapt', m.group(1))
+            return (None, None)
 
-          def extract_bid_num(html):
-            m = re.search(r'(?:kg2b|kapt)_\d+', html)
-            return m.group(0) if m else ''
+          def make_detail_url(kw, bid_type, bid_id):
+            base_params = {
+              'searchBidGb': 'bid_gb_1', 'bidTitle': kw, 'aptName': '',
+              'searchDateGb': 'reg', 'dateStart': date_start, 'dateEnd': date_end,
+              'dateArea': '1', 'bidState': '', 'codeAuth': '', 'codeWay': '',
+              'codeAuthSub': '', 'codeSucWay': '', 'codeClassifyType1': '',
+              'codeClassifyType2': '', 'codeClassifyType3': '', 'pageNo': '1',
+              'bidArea': '', 'dTime': str(int(today.timestamp() * 1000)),
+              'mainKaptCode': '', 'aptCode': ''
+            }
+            if bid_type == 'kg2b':
+              base_params.update({'type': '4', 'bidNum': bid_id, 'bidNo': ''})
+            else:
+              base_params.update({'type': '1', 'bidNum': bid_id, 'bidNo': bid_id})
+            return f'{BASE_URL}/bid/bidDetail.do?{urllib.parse.urlencode(base_params)}'
 
           def crawl_kapt():
             bids = []
@@ -118,9 +127,9 @@ jobs:
               for kw in KEYWORDS:
                 try:
                   params = urllib.parse.urlencode({
-                    'searchBidGb':'bid_gb_1', 'bidTitle':kw, 'aptName':'',
-                    'searchDateGb':'reg', 'dateStart':date_start,
-                    'dateEnd':date_end, 'dateArea':'1', 'bidState':''
+                    'searchBidGb': 'bid_gb_1', 'bidTitle': kw, 'aptName': '',
+                    'searchDateGb': 'reg', 'dateStart': date_start,
+                    'dateEnd': date_end, 'dateArea': '1', 'bidState': ''
                   })
                   list_url = f'{BASE_URL}/bid/bidList.do?{params}'
                   page.goto(list_url, timeout=30000, wait_until='networkidle')
@@ -141,16 +150,16 @@ jobs:
                       complex_name = cells[6].inner_text().strip() if len(cells) > 6 else ''
 
                       row_html = row.inner_html()
-                      bid_num  = extract_bid_num(row_html)
-                      print(f'  {title[:20]} | bidNum={bid_num}')
+                      bid_type, bid_id = extract_bid_info(row_html)
+                      print(f'  {title[:20]} | type={bid_type} | id={bid_id}')
 
-                      detail_url = make_detail_url(kw, bid_num) if bid_num else list_url
+                      detail_url = make_detail_url(kw, bid_type, bid_id) if bid_id else list_url
 
                       if title and not any(b['title'] == title for b in bids):
                         bids.append({
-                          'title':title, 'kind':kind,
-                          'deadline':deadline, 'complex':complex_name,
-                          'url':detail_url
+                          'title': title, 'kind': kind,
+                          'deadline': deadline, 'complex': complex_name,
+                          'url': detail_url
                         })
                     except Exception as e:
                       print(f'  행 오류: {e}')
@@ -176,12 +185,16 @@ jobs:
             ]
             for b in bids:
               blocks.append({
-                'type':'section',
-                'text':{'type':'mrkdwn','text':
+                'type': 'section',
+                'text': {'type': 'mrkdwn', 'text':
                   f"*{b['title']}*\n"
                   f"🏘️ {b['complex']}  |  📂 {b['kind']}\n"
                   f"📅 마감: {b['deadline']}"},
-                'accessory':{'type':'button','text':{'type':'plain_text','text':'K-APT 바로가기'},'url':b['url']}
+                'accessory': {
+                  'type': 'button',
+                  'text': {'type': 'plain_text', 'text': 'K-APT 바로가기'},
+                  'url': b['url']
+                }
               })
             slack({'blocks': blocks})
         env:
