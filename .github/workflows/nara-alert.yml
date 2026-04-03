@@ -74,8 +74,8 @@ jobs:
       - name: K-APT 입찰공고 크롤링 및 Slack 발송
         shell: python3 {0}
         run: |
-          import json, os, urllib.request
-          from datetime import datetime
+          import json, os, urllib.request, urllib.parse
+          from datetime import datetime, timedelta
           from playwright.sync_api import sync_playwright
 
           SLACK = os.environ['SLACK_WEBHOOK_URL']
@@ -88,37 +88,67 @@ jobs:
 
           def crawl_kapt():
             bids = []
+            today = datetime.now()
+            date_end = today.strftime('%Y-%m-%d')
+            date_start = (today - timedelta(days=30)).strftime('%Y-%m-%d')
+
             with sync_playwright() as p:
               browser = p.chromium.launch(headless=True)
-              ctx = browser.new_context(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+              ctx = browser.new_context(
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+              )
               page = ctx.new_page()
 
               for kw in KEYWORDS:
                 try:
-                  page.goto('https://www.k-apt.go.kr/bid/bidList.do', timeout=30000, wait_until='networkidle')
+                  # URL 파라미터로 직접 검색 (폼 제출 없이)
+                  params = urllib.parse.urlencode({
+                    'searchBidGb': 'bid_gb_1',
+                    'bidTitle': kw,
+                    'aptName': '',
+                    'searchDateGb': 'reg',
+                    'dateStart': date_start,
+                    'dateEnd': date_end,
+                    'dateArea': '1',
+                    'bidState': '',
+                    'codeAuth': '',
+                    'codeWay': '',
+                    'codeAuthSub': '',
+                    'codeSucWay': ''
+                  })
+                  url = f'https://www.k-apt.go.kr/bid/bidList.do?{params}'
+                  print(f'[{kw}] URL: {url}')
 
-                  # 실제 K-APT 검색창 name="bidTitle" 사용
-                  page.fill('input[name="bidTitle"]', kw)
-
-                  # 검색 버튼 클릭
-                  page.click('button.btn_search')
-                  page.wait_for_load_state('networkidle', timeout=15000)
-
+                  page.goto(url, timeout=30000, wait_until='networkidle')
                   rows = page.query_selector_all('table tbody tr')
                   print(f'[{kw}] {len(rows)}개 행 발견')
 
                   for row in rows:
                     try:
                       cells = row.query_selector_all('td')
-                      if len(cells) < 5: continue
+                      if len(cells) < 6: continue
+
                       title    = cells[3].inner_text().strip()
                       deadline = cells[4].inner_text().strip()
+                      status   = cells[5].inner_text().strip()
                       kind     = cells[1].inner_text().strip()
-                      method   = cells[2].inner_text().strip()
+                      complex_name = cells[6].inner_text().strip() if len(cells) > 6 else ''
+
+                      # 신규공고만 (입찰마감 제외)
+                      if '마감' in status:
+                        continue
+
                       if title and not any(b['title'] == title for b in bids):
-                        bids.append({'title': title, 'kind': kind, 'method': method, 'deadline': deadline})
+                        bids.append({
+                          'title': title,
+                          'kind': kind,
+                          'deadline': deadline,
+                          'complex': complex_name,
+                          'status': status
+                        })
                     except:
                       continue
+
                 except Exception as e:
                   print(f'크롤링 오류 [{kw}]: {e}')
                   continue
@@ -130,17 +160,20 @@ jobs:
           print(f'K-APT 최종 {len(bids)}건')
 
           if not bids:
-            slack({'text': '🏢 오늘은 새로운 K-APT 미화용역·경비용역 공고가 없어요.'})
+            slack({'text': '🏢 오늘은 새로운 K-APT 미화용역·경비용역 신규 공고가 없어요.'})
           else:
             d = datetime.now().strftime('%m월 %d일')
             blocks = [
-              {'type':'header','text':{'type':'plain_text','text':f'🏢 {d} K-APT 입찰공고 {len(bids)}건 (미화용역·경비용역)'}},
+              {'type':'header','text':{'type':'plain_text','text':f'🏢 {d} K-APT 신규 입찰공고 {len(bids)}건 (미화·경비용역)'}},
               {'type':'divider'}
             ]
             for b in bids:
               blocks.append({
                 'type':'section',
-                'text':{'type':'mrkdwn','text':f"*{b['title']}*\n📂 {b['kind']} | 🔨 {b['method']}\n📅 마감: {b['deadline']}"},
+                'text':{'type':'mrkdwn','text':
+                  f"*{b['title']}*\n"
+                  f"🏘️ {b['complex']}  |  📂 {b['kind']}\n"
+                  f"📅 마감: {b['deadline']}"},
                 'accessory':{'type':'button','text':{'type':'plain_text','text':'K-APT 바로가기'},'url':'https://www.k-apt.go.kr/bid/bidList.do'}
               })
             slack({'blocks': blocks})
