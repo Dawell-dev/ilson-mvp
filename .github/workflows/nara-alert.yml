@@ -91,40 +91,12 @@ jobs:
             req  = urllib.request.Request(SLACK, data=data, headers={'Content-Type': 'application/json'})
             urllib.request.urlopen(req)
 
-          def make_detail_url(bid_num, search_params):
-            params = urllib.parse.urlencode({
-              'searchBidGb':       search_params.get('searchBidGb', 'bid_gb_1'),
-              'bidTitle':          search_params.get('bidTitle', ''),
-              'aptName':           '',
-              'searchDateGb':      'reg',
-              'dateStart':         date_start,
-              'dateEnd':           date_end,
-              'dateArea':          '1',
-              'bidState':          '',
-              'codeAuth':          '',
-              'codeWay':           '',
-              'codeAuthSub':       '',
-              'codeSucWay':        '',
-              'codeClassifyType1': '',
-              'codeClassifyType2': '',
-              'codeClassifyType3': '',
-              'pageNo':            '1',
-              'type':              '4',
-              'bidArea':           '',
-              'bidNum':            bid_num,
-              'bidNo':             '',
-              'dTime':             str(int(today.timestamp() * 1000)),
-              'mainKaptCode':      '',
-              'aptCode':           ''
-            })
-            return f'{BASE_URL}/bid/bidDetail.do?{params}'
-
           def crawl_kapt():
             bids = []
             with sync_playwright() as p:
               browser = p.chromium.launch(headless=True)
-              ctx     = browser.new_context(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-              page    = ctx.new_page()
+              ctx  = browser.new_context(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+              page = ctx.new_page()
 
               for kw in KEYWORDS:
                 try:
@@ -138,8 +110,8 @@ jobs:
                     'dateArea':    '1',
                     'bidState':    ''
                   })
-                  url = f'{BASE_URL}/bid/bidList.do?{params}'
-                  page.goto(url, timeout=30000, wait_until='networkidle')
+                  list_url = f'{BASE_URL}/bid/bidList.do?{params}'
+                  page.goto(list_url, timeout=30000, wait_until='networkidle')
 
                   rows = page.query_selector_all('table tbody tr')
                   print(f'[{kw}] {len(rows)}개 행 발견')
@@ -158,27 +130,15 @@ jobs:
                       kind         = cells[1].inner_text().strip()
                       complex_name = cells[6].inner_text().strip() if len(cells) > 6 else ''
 
-                      # onclick 또는 href에서 bidNum 추출
-                      anchor  = cells[3].query_selector('a')
-                      bid_num = ''
+                      # 공고 제목 링크 클릭 → 이동한 URL 캡처 → 뒤로가기
+                      anchor = cells[3].query_selector('a')
+                      detail_url = list_url  # 기본값
                       if anchor:
-                        onclick = anchor.get_attribute('onclick') or ''
-                        href    = anchor.get_attribute('href') or ''
-                        # onclick에서 bidNum 파싱 (예: fn_detail('kg2b_134186', ...))
-                        m = re.search(r"'((?:kg2b|kapt)_\d+)'", onclick)
-                        if m:
-                          bid_num = m.group(1)
-                        # href에서 bidNum 파싱
-                        if not bid_num:
-                          m = re.search(r'bidNum=([^&]+)', href)
-                          if m:
-                            bid_num = m.group(1)
-
-                      # 상세 URL 구성
-                      if bid_num:
-                        detail_url = make_detail_url(bid_num, {'searchBidGb': 'bid_gb_1', 'bidTitle': kw})
-                      else:
-                        detail_url = url  # fallback: 목록 페이지
+                        with page.expect_navigation(timeout=10000):
+                          anchor.click()
+                        detail_url = page.url
+                        print(f'  상세URL: {detail_url}')
+                        page.go_back(timeout=15000, wait_until='networkidle')
 
                       if title and not any(b['title'] == title for b in bids):
                         bids.append({
@@ -189,7 +149,12 @@ jobs:
                           'url':      detail_url
                         })
                     except Exception as e:
-                      print(f'행 파싱 오류: {e}')
+                      print(f'  행 오류: {e}')
+                      # 페이지가 이동됐을 수 있으니 목록으로 복귀
+                      try:
+                        page.goto(list_url, timeout=15000, wait_until='networkidle')
+                      except:
+                        pass
                       continue
 
                 except Exception as e:
