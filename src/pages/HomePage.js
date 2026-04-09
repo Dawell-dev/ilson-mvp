@@ -335,13 +335,29 @@ function MainScreen({ region, setRegion }) {
   const [activeTab, setActiveTab] = useState('home');
   const [favorites, setFavorites] = useState([]);
   const [profile, setProfile] = useState({
-    name: '홍길동',
-    phone: '010-1234-5678',
+    name: '',
+    phone: '',
+    avatar_url: '',
     days: ['월', '수', '금'],
     times: ['오전', '오후'],
     jobs: ['아파트 경비', '상가·건물 청소'],
     distance: '1km',
   });
+
+  // 카카오 로그인 정보 자동 반영
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const meta = session.user.user_metadata;
+        setProfile(prev => ({
+          ...prev,
+          name: meta?.name || meta?.full_name || '사용자',
+          phone: session.user.email || '',
+          avatar_url: meta?.avatar_url || '',
+        }));
+      }
+    });
+  }, []);
 
   const toggleFav = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
   const filtered = getFiltered(currentDistance);
@@ -598,9 +614,13 @@ function ProfileView({ region, profile, setProfile }) {
         {/* 기본 정보 — 카카오 */}
         <ProfileSection icon="😊" iconBg="#FEE500" title="기본 정보" badge="카카오 연동">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center text-[20px]" style={{ background: '#FEE500' }}>👤</div>
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="프로필" className="w-12 h-12 rounded-full object-cover" style={{ border: '2px solid #FEE500' }} />
+            ) : (
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-[20px]" style={{ background: '#FEE500' }}>👤</div>
+            )}
             <div className="flex-1">
-              <div className="text-[16px] font-medium" style={{ color: '#1A1A18' }}>{profile.name}</div>
+              <div className="text-[16px] font-medium" style={{ color: '#1A1A18' }}>{profile.name || '로그인 필요'}</div>
               <div className="text-[13px] mt-0.5" style={{ color: '#888780' }}>{profile.phone}</div>
             </div>
             <span className="text-[11px] font-medium py-1 px-2 rounded-full" style={{ background: '#FEE500', color: '#3C1E1E' }}>자동입력</span>
