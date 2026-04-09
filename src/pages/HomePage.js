@@ -324,13 +324,12 @@ function MainScreen({ region, setRegion }) {
   const [activeTab, setActiveTab] = useState('home');
   const [favorites, setFavorites] = useState([]);
   const [profile, setProfile] = useState({
-    name: '김영수',
+    name: '홍길동',
     phone: '010-1234-5678',
-    age: 67,
-    gender: '남',
-    jobType: '',
-    workTime: '',
-    saved: false,
+    days: ['월', '수', '금'],
+    times: ['오전', '오후'],
+    jobs: ['아파트 경비', '상가·건물 청소'],
+    distance: '1km',
   });
 
   const toggleFav = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
@@ -391,7 +390,7 @@ function MainScreen({ region, setRegion }) {
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} />}
         {activeTab === 'history' && <HistoryView />}
-        {activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} />}
+{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} />}
       </div>
 
       {/* 하단 탭 */}
@@ -410,7 +409,7 @@ function MainScreen({ region, setRegion }) {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               {tab.key === 'home' && <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/>}
               {tab.key === 'favorites' && <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/>}
-              {tab.key === 'history' && <><rect x="4" y="3" width="16" height="18" rx="2" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill="none"/><line x1="8" y1="8" x2="16" y2="8" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="12" x2="16" y2="12" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="16" x2="12" y2="16" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/></>}
+{tab.key === 'history' && <><rect x="4" y="3" width="16" height="18" rx="2" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill="none"/><line x1="8" y1="8" x2="16" y2="8" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="12" x2="16" y2="12" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="16" x2="12" y2="16" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/></>}
               {tab.key === 'profile' && <><circle cx="12" cy="8" r="4" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/><path d="M4 21v-1a6 6 0 0112 0v1" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill="none"/></>}
             </svg>
             <span className="text-[11px]" style={{ color: activeTab === tab.key ? '#E85C1E' : '#B4B2A9', fontWeight: activeTab === tab.key ? 600 : 400 }}>
@@ -532,147 +531,179 @@ function JobCard({ job, index, isFav, toggleFav }) {
 
 
 // ─── 마이페이지 ───
-function ProfileView({ region, profile, setProfile }) {
+const PROFILE_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const PROFILE_TIMES = ['오전', '오후', '야간'];
+const PROFILE_JOBS = ['아파트 경비', '상가·건물 청소', '조경', '주차 관리', '택배·물류 분류'];
+const PROFILE_DISTS = ['500m', '1km', '3km', '무관'];
 
-  const jobTypes = ['경비·보안', '청소·미화', '주차·교통', '조경·관리', '조리·배식', '물류·배송', '시설·보수', '요양·돌봄', '운전·대리', '사무·행정'];
-  const avoidTimes = ['아침 일찍은 힘들어요', '저녁은 안 돼요', '주말은 쉬고 싶어요'];
+function ProfileCheckMark() {
+  return (
+    <div style={{ width: 12, height: 8, borderLeft: '2px solid #fff', borderBottom: '2px solid #fff', transform: 'rotate(-45deg) translate(1px, -1px)' }} />
+  );
+}
+
+function ProfileSection({ icon, iconBg, title, badge, children }) {
+  return (
+    <div className="rounded-[12px] overflow-hidden" style={{ background: '#FAFAF8', border: '1px solid #EDE8E2' }}>
+      <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #EDE8E2' }}>
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[14px]" style={{ background: iconBg }}>{icon}</span>
+        <span className="text-[15px] font-medium flex-1" style={{ color: '#1A1A18' }}>{title}</span>
+        {badge && <span className="text-[11px]" style={{ color: '#E85C1E' }}>{badge}</span>}
+      </div>
+      <div className="p-4 flex flex-col gap-3">{children}</div>
+    </div>
+  );
+}
+
+function ProfileView({ region, profile, setProfile }) {
+  const toggleArr = (key, val) => {
+    setProfile(p => {
+      const arr = p[key] || [];
+      return { ...p, [key]: arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val] };
+    });
+  };
+
+  const [toastVisible, setToastVisible] = useState(false);
+  const triggerSave = () => {
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 1800);
+  };
 
   return (
-    <div className="px-5 pt-5">
-      {/* 프로필 헤더 */}
-      <div className="flex items-center gap-4 mb-6 p-5 rounded-[16px]" style={{ background: '#FAFAF8', border: '1px solid #EDE8E2' }}>
-        <div className="w-[64px] h-[64px] rounded-full flex items-center justify-center text-[28px]" style={{ background: '#FFF5F0', border: '2px solid #FDDCCC' }}>
-          👤
-        </div>
-        <div className="flex-1">
-          <div className="text-[20px] font-bold" style={{ color: '#1A1A18' }}>{profile.name}님</div>
-          <div className="text-[14px] mt-1" style={{ color: '#888780' }}>{profile.age}세 · {profile.gender}</div>
-          <div className="text-[14px] mt-0.5" style={{ color: '#888780' }}>{profile.phone}</div>
-        </div>
-        <div className="flex items-center gap-1 py-1.5 px-3 rounded-full" style={{ background: '#FEE500' }}>
-          <KakaoIcon size={14} />
-          <span className="text-[12px] font-semibold" style={{ color: '#191919' }}>연결됨</span>
-        </div>
+    <div className="relative">
+      {/* 토스트 */}
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 py-2 px-5 rounded-full text-[13px] text-white transition-opacity" style={{ background: 'rgba(0,0,0,0.75)', opacity: toastVisible ? 1 : 0, pointerEvents: 'none' }}>
+        저장됐어요
       </div>
 
-      {/* 카카오에서 가져온 정보 */}
-      <div className="mb-5">
-        <div className="text-[14px] font-bold mb-3" style={{ color: '#1A1A18' }}>카카오에서 가져온 정보</div>
-        <div className="rounded-[16px] overflow-hidden" style={{ border: '1px solid #EDE8E2' }}>
-          {[
-            { label: '이름', value: profile.name },
-            { label: '전화번호', value: profile.phone },
-            { label: '나이', value: `${profile.age}세` },
-            { label: '성별', value: profile.gender },
-          ].map((item, i) => (
-            <div key={item.label} className="flex justify-between items-center px-4 py-3.5" style={{ background: '#FAFAF8', borderBottom: i < 3 ? '1px solid #EDE8E2' : 'none' }}>
-              <span className="text-[15px]" style={{ color: '#888780' }}>{item.label}</span>
-              <span className="text-[15px] font-semibold" style={{ color: '#1A1A18' }}>{item.value}</span>
+      {/* 헤더 */}
+      <div className="px-4 py-4" style={{ background: '#E85C1E' }}>
+        <div className="text-[19px] font-medium text-white">내 정보</div>
+        <div className="text-[12px] text-white/80 mt-0.5">일자리 매칭에 사용됩니다</div>
+      </div>
+
+      <div className="p-4 flex flex-col gap-3">
+
+        {/* 기본 정보 — 카카오 */}
+        <ProfileSection icon="😊" iconBg="#FEE500" title="기본 정보" badge="카카오 연동">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center text-[20px]" style={{ background: '#FEE500' }}>👤</div>
+            <div className="flex-1">
+              <div className="text-[16px] font-medium" style={{ color: '#1A1A18' }}>{profile.name}</div>
+              <div className="text-[13px] mt-0.5" style={{ color: '#888780' }}>{profile.phone}</div>
             </div>
-          ))}
-        </div>
-        <div className="text-[12px] mt-2" style={{ color: '#B4B2A9' }}>카카오 계정 정보는 자동으로 가져와요</div>
-      </div>
+            <span className="text-[11px] font-medium py-1 px-2 rounded-full" style={{ background: '#FEE500', color: '#3C1E1E' }}>자동입력</span>
+          </div>
+          <div>
+            <div className="text-[13px] mb-1" style={{ color: '#888780' }}>거주 지역</div>
+            <div className="text-[15px] px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: region ? '#1A1A18' : '#B4B2A9' }}>
+              {region || '위치 동의 후 자동 설정'}
+            </div>
+          </div>
+        </ProfileSection>
 
-      {/* 거주지 — 위치동의에서 자동 설정 */}
-      <div className="mb-5">
-        <div className="text-[14px] font-bold mb-3" style={{ color: '#1A1A18' }}>내가 사는 동네</div>
-        <div
-          className="w-full flex items-center gap-3 px-4 py-4 rounded-[12px]"
-          style={{ background: region ? '#FFF5F0' : '#FAFAF8', border: region ? '1px solid #FDDCCC' : '1px solid #EDE8E2' }}
-        >
-          <span className="text-[18px]">📍</span>
-          <span className="text-[16px] font-semibold" style={{ color: region ? '#E85C1E' : '#B4B2A9' }}>
-            {region || '위치 동의 후 자동 설정돼요'}
-          </span>
-          {region && <span className="ml-auto text-[12px] py-1 px-2.5 rounded-full" style={{ background: '#E85C1E', color: 'white' }}>자동</span>}
-        </div>
-      </div>
+        {/* 일할 수 있는 날 */}
+        <ProfileSection icon="📅" iconBg="#E8F5E9" title="일할 수 있는 날">
+          <div className="grid grid-cols-7 gap-1.5">
+            {PROFILE_DAYS.map(d => {
+              const on = (profile.days || []).includes(d);
+              return (
+                <button key={d} className="py-2 rounded-lg text-[14px] font-medium text-center"
+                  style={on ? { background: '#E85C1E', color: '#fff', border: '1px solid #E85C1E' } : { background: '#F7F5F2', color: '#888780', border: '1px solid #EDE8E2' }}
+                  onClick={() => { toggleArr('days', d); triggerSave(); }}
+                >{d}</button>
+              );
+            })}
+          </div>
+          <div>
+            <div className="text-[13px] mb-2" style={{ color: '#888780' }}>선호 시간대</div>
+            <div className="flex gap-2">
+              {PROFILE_TIMES.map(t => {
+                const on = (profile.times || []).includes(t);
+                return (
+                  <button key={t} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[14px]"
+                    style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: on ? '#1A1A18' : '#888780' }}
+                    onClick={() => { toggleArr('times', t); triggerSave(); }}
+                  >
+                    <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                      style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#fff', border: '1.5px solid #EDE8E2' }}
+                    >{on && <ProfileCheckMark />}</span>
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </ProfileSection>
 
-      {/* 직접 입력 — 희망 분야 */}
-      <div className="mb-5">
-        <div className="text-[14px] font-bold mb-3" style={{ color: '#1A1A18' }}>어떤 일을 하고 싶으세요?</div>
-        <div className="flex flex-wrap gap-2">
-          {jobTypes.map((type) => (
-            <button
-              key={type}
-              className="py-2.5 px-4 rounded-full text-[14px] font-medium transition-colors"
-              style={profile.jobType === type
-                ? { background: '#FFF5F0', border: '1px solid #E85C1E', color: '#E85C1E' }
-                : { background: '#FAFAF8', border: '1px solid #EDE8E2', color: '#888780' }
-              }
-              onClick={() => setProfile(p => ({ ...p, jobType: p.jobType === type ? '' : type }))}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* 원하는 일 */}
+        <ProfileSection icon="💼" iconBg="#FBE9E7" title="원하는 일">
+          <div className="flex flex-col">
+            {PROFILE_JOBS.map((job, i) => {
+              const on = (profile.jobs || []).includes(job);
+              return (
+                <button key={job} className="flex items-center gap-3 py-3 text-left"
+                  style={{ borderBottom: i < PROFILE_JOBS.length - 1 ? '1px solid #EDE8E2' : 'none' }}
+                  onClick={() => { toggleArr('jobs', job); triggerSave(); }}
+                >
+                  <span className="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0"
+                    style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#F7F5F2', border: '1.5px solid #EDE8E2' }}
+                  >{on && <ProfileCheckMark />}</span>
+                  <span className="text-[15px]" style={{ color: '#1A1A18' }}>{job}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div>
+            <div className="text-[13px] mb-2" style={{ color: '#888780' }}>이동 가능 거리</div>
+            <div className="flex gap-1.5">
+              {PROFILE_DISTS.map(d => {
+                const on = profile.distance === d;
+                return (
+                  <button key={d} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[13px]"
+                    style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: on ? '#1A1A18' : '#888780', fontWeight: on ? 500 : 400 }}
+                    onClick={() => { setProfile(p => ({ ...p, distance: d })); triggerSave(); }}
+                  >
+                    <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#fff', border: '1.5px solid #EDE8E2' }}
+                    >{on && <span className="w-1.5 h-1.5 rounded-full bg-white" />}</span>
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </ProfileSection>
 
-      {/* 이 시간은 안 돼요 */}
-      <div className="mb-8">
-        <div className="text-[14px] font-bold mb-1" style={{ color: '#1A1A18' }}>이 시간은 안 돼요</div>
-        <div className="text-[12px] mb-3" style={{ color: '#B4B2A9' }}>해당되는 것만 골라주세요 (선택 안 하면 아무 때나 OK)</div>
-        <div className="flex flex-wrap gap-2">
-          {avoidTimes.map((item) => {
-            const selected = (profile.avoidTimes || []).includes(item);
-            return (
-              <button
-                key={item}
-                className="py-2.5 px-4 rounded-full text-[14px] font-medium transition-colors"
-                style={selected
-                  ? { background: '#FFF5F0', border: '1px solid #E85C1E', color: '#E85C1E' }
-                  : { background: '#FAFAF8', border: '1px solid #EDE8E2', color: '#888780' }
-                }
-                onClick={() => setProfile(p => ({
-                  ...p,
-                  avoidTimes: selected
-                    ? (p.avoidTimes || []).filter(t => t !== item)
-                    : [...(p.avoidTimes || []), item]
-                }))}
-              >
-                {selected ? '✓ ' : ''}{item}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 저장 버튼 */}
-      <button
-        className="w-full py-4 rounded-[12px] text-[17px] font-bold text-white mb-5"
-        style={{ background: profile.saved ? '#888780' : '#E85C1E' }}
-        onClick={() => {
-          setProfile(p => ({ ...p, saved: true }));
-          setTimeout(() => setProfile(p => ({ ...p, saved: false })), 2000);
-        }}
-      >
-        {profile.saved ? '✅ 저장했어요!' : '저장하기'}
-      </button>
-
-      {/* 기타 메뉴 */}
-      <div className="rounded-[16px] overflow-hidden mb-8" style={{ border: '1px solid #EDE8E2' }}>
-        {[
-          { icon: '📞', label: '고객센터 전화', sub: '1588-0000' },
-          { icon: '📄', label: '이용약관' },
-          { icon: '🔒', label: '개인정보처리방침' },
-          { icon: '🚪', label: '로그아웃', danger: true },
-        ].map((item, i) => (
-          <button
-            key={item.label}
-            className="w-full flex items-center gap-3 px-4 py-4 text-left"
-            style={{ background: '#FAFAF8', borderBottom: i < 3 ? '1px solid #EDE8E2' : 'none' }}
-          >
-            <span className="text-[18px]">{item.icon}</span>
-            <span className="text-[15px] font-medium flex-1" style={{ color: item.danger ? '#DC2626' : '#1A1A18' }}>{item.label}</span>
-            {item.sub && <span className="text-[14px] font-bold" style={{ color: '#E85C1E' }}>{item.sub}</span>}
-            {!item.sub && <span className="text-[13px]" style={{ color: '#B4B2A9' }}>▶</span>}
+        {/* 경력 (선택) */}
+        <ProfileSection icon="📋" iconBg="#E3F2FD" title="경력" badge="선택">
+          <div className="px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}>
+            <div className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>다웰서비스 — 아파트 경비</div>
+            <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>2020.03 ~ 2023.12 (3년 9개월)</div>
+          </div>
+          <button className="w-full py-2.5 rounded-lg text-center text-[13px]" style={{ border: '1px dashed #EDE8E2', color: '#888780', background: 'transparent' }}>
+            + 경력 추가하기
           </button>
-        ))}
+        </ProfileSection>
+
+        {/* 한 줄 소개 (선택) */}
+        <ProfileSection icon="✏️" iconBg="#F3E5F5" title="한 줄 소개" badge="선택">
+          <div className="text-[14px] leading-relaxed px-3 py-2.5 rounded-lg min-h-[64px]" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#1A1A18' }}>
+            성실하게 일하겠습니다. 경비 경험 있습니다.
+          </div>
+        </ProfileSection>
+
+      </div>
+
+      {/* 자동저장 안내 */}
+      <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: '#FAFAF8', borderTop: '1px solid #EDE8E2' }}>
+        <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+        <span className="text-[13px]" style={{ color: '#888780' }}>변경사항이 자동으로 저장돼요</span>
       </div>
     </div>
   );
 }
+
 
 // ─── 관심 목록 ───
 function FavoritesView({ favorites, toggleFav }) {
