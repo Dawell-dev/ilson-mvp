@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
 // ─── 데이터 ───
@@ -63,9 +64,19 @@ function LoginScreen({ onNext }) {
   const [loading, setLoading] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
 
-  const handleKakao = () => {
+  const handleKakao = async () => {
     setLoading(true);
-    setTimeout(() => onNext(), 1500);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: window.location.origin,
+        scopes: 'profile_nickname profile_image account_email'
+      }
+    });
+    if (error) {
+      alert('로그인 중 오류가 발생했습니다.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -753,12 +764,39 @@ function HistoryView() {
 // 메인 Export
 // ─────────────────────────────────────
 export default function HomePage() {
-  const [screen, setScreen] = useState('login');
+  const [screen, setScreen] = useState('loading');
   const [region, setRegion] = useState('');
+
+  // 카카오 로그인 후 세션 확인
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setScreen('location');
+      } else {
+        setScreen('login');
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        setScreen('location');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <div className="flex justify-center min-h-screen bg-[#f0f0ed]">
       <div className="max-w-app w-full min-h-screen bg-[#FAFAF8] relative overflow-hidden sm:rounded-[32px] sm:shadow-[0_8px_40px_rgba(0,0,0,0.12)] sm:my-5 sm:min-h-[90vh]">
+        {screen === 'loading' && (
+          <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#F5F0EB' }}>
+            <div className="w-[88px] h-[88px] rounded-[22px] flex items-center justify-center mb-4" style={{ background: '#E85C1E' }}>
+              <AppIcon />
+            </div>
+            <div className="text-[14px]" style={{ color: '#888780' }}>로딩 중...</div>
+          </div>
+        )}
         {screen === 'login' && <LoginScreen onNext={() => setScreen('location')} />}
         {screen === 'location' && (
           <LocationScreen
