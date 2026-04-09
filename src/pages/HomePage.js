@@ -480,7 +480,7 @@ function MainScreen({ region, setRegion }) {
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
-{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} />}
+{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} />}
       </div>
 
       {/* 하단 탭 */}
@@ -645,7 +645,7 @@ function ProfileSection({ icon, iconBg, title, badge, children }) {
   );
 }
 
-function ProfileView({ region, profile, setProfile }) {
+function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId }) {
   const toggleArr = (key, val) => {
     setProfile(p => {
       const arr = p[key] || [];
