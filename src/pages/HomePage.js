@@ -2,16 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
-// ─── 데이터 ───
-const JOBS = [
-  { id: 1, icon: '🏢', title: '아파트 경비', location: '화도읍 마석로 12', pay: '시급 11,000원', tags: ['주간근무', '주5일'], company: '다웰서비스', isNew: true, distance: '350m', dist: 0.35, walkTime: '5분', color: '#C62828', x: '30%', y: '30%' },
-  { id: 2, icon: '🧹', title: '상가 청소', location: '화도읍 녹촌로 45', pay: '시급 10,500원', tags: ['오전근무', '주3일'], company: '그린관리', isNew: true, distance: '800m', dist: 0.8, walkTime: '12분', color: '#E65100', x: '65%', y: '22%' },
-  { id: 3, icon: '🅿️', title: '주차 안내', location: '화도읍 수레로 88', pay: '시급 11,500원', tags: ['교대근무', '주5일'], company: '파크원', isNew: false, distance: '1.2km', dist: 1.2, walkTime: '18분', color: '#1B5E20', x: '22%', y: '62%' },
-  { id: 4, icon: '🌳', title: '아파트 조경', location: '마석동 중앙로 33', pay: '일급 95,000원', tags: ['주3일', '야외'], company: '푸른조경', isNew: false, distance: '1.8km', dist: 1.8, walkTime: '25분', color: '#0D47A1', x: '76%', y: '72%' },
-  { id: 5, icon: '📦', title: '택배 분류', location: '화도읍 창현로 56', pay: '시급 12,000원', tags: ['오전4시간', '주5일'], company: '로지스', isNew: true, distance: '2.3km', dist: 2.3, walkTime: '32분', color: '#4A148C', x: '42%', y: '14%' },
-  { id: 6, icon: '🏫', title: '학교 시설관리', location: '화도읍 비룡로 22', pay: '월급 230만원', tags: ['주간근무', '주5일'], company: '에듀시설', isNew: false, distance: '2.8km', dist: 2.8, walkTime: '38분', color: '#004D40', x: '82%', y: '46%' },
-  { id: 7, icon: '🍳', title: '구내식당 조리', location: '마석동 경춘로 110', pay: '시급 11,000원', tags: ['오전근무', '주5일'], company: '맛찬들', isNew: true, distance: '3.1km', dist: 3.1, walkTime: '42분', color: '#880E4F', x: '14%', y: '82%' },
-];
+// ─── 데이터 유틸 ───
+const JOB_ICONS = { '경비': '🏢', '청소': '🧹', '주차관리': '🅿️', '시설관리': '🏫', '미화': '🌳', '조리': '🍳' };
+
+function formatJobFromDB(job, index) {
+  const icon = JOB_ICONS[job.job_type] || '💼';
+  const wage = job.hourly_wage ? `시급 ${job.hourly_wage?.toLocaleString()}원` : '';
+  const tags = [job.work_hours, job.work_days].filter(Boolean);
+  const createdAt = new Date(job.created_at);
+  const now = new Date();
+  const isNew = (now - createdAt) < 3 * 24 * 60 * 60 * 1000; // 3일 이내
+  const dist = 0.5 + index * 0.7; // 임시 거리 (위치 기반 추후 구현)
+
+  return {
+    id: job.id,
+    icon,
+    title: job.title,
+    location: job.address,
+    pay: wage,
+    tags,
+    company: job.employers?.company_name || '',
+    isNew,
+    distance: dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`,
+    dist,
+    walkTime: `${Math.round(dist * 15)}분`,
+  };
+}
 
 
 const DISTANCES = ['1km', '3km', '5km', '전체'];
@@ -49,9 +65,9 @@ function formatPhone(e) {
   e.target.value = v;
 }
 
-function getFiltered(distance) {
+function getFiltered(jobs, distance) {
   const max = distance === '1km' ? 1 : distance === '3km' ? 3 : distance === '5km' ? 5 : 999;
-  return JOBS.filter((j) => j.dist <= max);
+  return jobs.filter((j) => j.dist <= max);
 }
 
 
@@ -338,29 +354,76 @@ function MainScreen({ region, setRegion }) {
     name: '',
     phone: '',
     avatar_url: '',
-    days: ['월', '수', '금'],
+    days: ['월', '화', '수', '목', '금'],
     times: ['오전', '오후'],
-    jobs: ['아파트 경비', '상가·건물 청소'],
+    jobs: [],
     distance: '1km',
   });
+  const [workerId, setWorkerId] = useState(null);
+  const [kakaoId, setKakaoId] = useState(null);
 
-  // 카카오 로그인 정보 자동 반영
+  // 카카오 로그인 + workers 테이블 프로필 로드
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const meta = session.user.user_metadata;
+    const loadProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const meta = session.user.user_metadata;
+      const kId = meta?.provider_id;
+      setKakaoId(kId);
+
+      // 기본 카카오 정보
+      setProfile(prev => ({
+        ...prev,
+        name: meta?.name || meta?.full_name || '사용자',
+        phone: session.user.email || '',
+        avatar_url: meta?.avatar_url || '',
+      }));
+
+      // workers 테이블에서 프로필 조회
+      const { data: worker } = await supabase
+        .from('workers')
+        .select('*')
+        .eq('kakao_id', kId)
+        .maybeSingle();
+
+      if (worker) {
+        setWorkerId(worker.id);
         setProfile(prev => ({
           ...prev,
-          name: meta?.name || meta?.full_name || '사용자',
-          phone: session.user.email || '',
-          avatar_url: meta?.avatar_url || '',
+          days: worker.available_times?.filter(t => ['월','화','수','목','금','토','일'].includes(t)) || [],
+          times: worker.available_times?.filter(t => ['오전','오후','야간'].includes(t)) || [],
+          jobs: worker.job_types || [],
         }));
       }
-    });
+    };
+    loadProfile();
+  }, []);
+
+  const [jobs, setJobs] = useState([]);
+
+  // DB에서 일자리 가져오기
+  useEffect(() => {
+    const loadJobs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('*, employers(company_name)')
+          .eq('status', 'open')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setJobs(data.map((job, i) => formatJobFromDB(job, i)));
+        }
+      } catch (e) {
+        console.error('일자리 로딩 오류:', e);
+      }
+    };
+    loadJobs();
   }, []);
 
   const toggleFav = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
-  const filtered = getFiltered(currentDistance);
+  const filtered = getFiltered(jobs, currentDistance);
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#F7F5F2' }}>
@@ -415,7 +478,7 @@ function MainScreen({ region, setRegion }) {
         {activeTab === 'home' && (
           <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} />
         )}
-        {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} />}
+        {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
 {activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} />}
       </div>
@@ -591,9 +654,34 @@ function ProfileView({ region, profile, setProfile }) {
   };
 
   const [toastVisible, setToastVisible] = useState(false);
-  const triggerSave = () => {
+  const triggerSave = async () => {
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 1800);
+
+    // workers 테이블에 저장
+    if (!kakaoId) return;
+
+    const payload = {
+      name: profile.name,
+      phone: profile.phone || `kakao_${kakaoId}`,
+      address: region || '',
+      job_types: profile.jobs,
+      available_times: [...profile.days, ...profile.times],
+      kakao_id: kakaoId,
+    };
+
+    try {
+      if (workerId) {
+        // 기존 프로필 업데이트
+        await supabase.from('workers').update(payload).eq('id', workerId);
+      } else {
+        // 신규 프로필 생성
+        const { data } = await supabase.from('workers').insert([payload]).select().single();
+        if (data) setWorkerId(data.id);
+      }
+    } catch (e) {
+      console.error('프로필 저장 오류:', e);
+    }
   };
 
   return (
@@ -737,8 +825,8 @@ function ProfileView({ region, profile, setProfile }) {
 
 
 // ─── 관심 목록 ───
-function FavoritesView({ favorites, toggleFav }) {
-  const favJobs = JOBS.filter(j => favorites.includes(j.id));
+function FavoritesView({ favorites, toggleFav, jobs }) {
+  const favJobs = jobs.filter(j => favorites.includes(j.id));
 
   if (favJobs.length === 0) {
     return (
@@ -789,12 +877,18 @@ export default function HomePage() {
 
   // 카카오 로그인 후 세션 확인
   useEffect(() => {
+    const timeout = setTimeout(() => setScreen('login'), 3000); // 3초 타임아웃
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeout);
       if (session) {
         setScreen('location');
       } else {
         setScreen('login');
       }
+    }).catch(() => {
+      clearTimeout(timeout);
+      setScreen('login');
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -803,7 +897,10 @@ export default function HomePage() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
