@@ -4,6 +4,7 @@
  * - UI: lucide-react 제거, HomePage.js 디자인 언어(#E85C1E, 이모지, 둥근 카드)로 전면 개편
  * - UX: 지원 확인 바텀시트 + 토스트, requirements/benefits 조건부 렌더, 지도 링크 추가
  * - 세션 없으면 '/'로 리다이렉트, 프로필 없으면 토스트 후 홈 복귀
+ * - Phase A (이력서 강화): 지원 모달 문구를 "내 이력서 전달" 중심으로 변경
  */
 
 import React, { useState, useEffect } from 'react';
@@ -454,7 +455,7 @@ export default function JobDetailPage() {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-[18px] flex-shrink-0 leading-none mt-0.5">📋</span>
-                    <span className="text-[15px]" style={{ color: '#1A1A18' }}>내 정보(이름, 전화번호, 경력)가 전달돼요</span>
+                    <span className="text-[15px]" style={{ color: '#1A1A18' }}>내 이력서가 회사로 전달돼요 (이름, 연락처, 경력, 자격증 포함)</span>
                   </li>
                 </ul>
               </div>
