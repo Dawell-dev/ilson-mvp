@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, MapPin, Briefcase, Clock, ChevronRight, LogOut } from 'lucide-react';
-import { BottomNav, Card, Button, Loading } from '../../components/common';
+import { BottomNav, Card, Button } from '../../components/common';
 import { supabase } from '../../lib/supabase';
 
 function MyPage() {
