@@ -5,10 +5,11 @@ function Card({ children, onClick, className = '', hoverable = false }) {
     <div
       onClick={onClick}
       className={`
-        bg-white rounded-2xl p-5 shadow-sm border border-gray-100
-        ${hoverable ? 'cursor-pointer hover:shadow-md hover:border-blue-200 transition-all' : ''}
+        rounded-2xl p-5
+        ${hoverable ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''}
         ${className}
       `}
+      style={{ background: '#FAFAF8', border: '1px solid #EDE8E2' }}
     >
       {children}
     </div>

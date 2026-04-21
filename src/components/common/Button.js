@@ -10,20 +10,28 @@ function Button({
   fullWidth = true,
   className = ''
 }) {
-  const baseStyles = 'font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2';
+  const baseStyles = 'font-bold rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 border-none';
 
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-300',
-    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 disabled:bg-gray-100',
-    outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50 active:bg-blue-100 disabled:border-gray-300 disabled:text-gray-300',
-    danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 disabled:bg-gray-300',
-    kakao: 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500 active:bg-yellow-600',
+    primary: 'text-white',
+    secondary: 'text-[#888780]',
+    outline: 'text-[#E85C1E]',
+    danger: 'text-white',
+    kakao: 'text-[#191919]',
+  };
+
+  const variantStyles = {
+    primary: { background: disabled ? '#CCC' : '#E85C1E' },
+    secondary: { background: '#F7F5F2', border: '1px solid #EDE8E2' },
+    outline: { background: 'transparent', border: '2px solid #E85C1E' },
+    danger: { background: '#EF4444' },
+    kakao: { background: '#FEE500' },
   };
 
   const sizes = {
-    small: 'px-4 py-2 text-base',
-    medium: 'px-6 py-3 text-lg',
-    large: 'px-6 py-4 text-xl',  // 시니어용 큰 버튼
+    small: 'px-5 py-3 text-[16px]',
+    medium: 'px-6 py-4 text-[18px]',
+    large: 'py-[20px] px-6 text-[19px]',  // 시니어용 큰 버튼
   };
 
   return (
@@ -31,6 +39,7 @@ function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      style={variantStyles[variant]}
       className={`
         ${baseStyles}
         ${variants[variant]}
