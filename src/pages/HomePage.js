@@ -373,8 +373,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
 
   // 카카오 로그인 + workers 테이블 프로필 로드
   useEffect(() => {
-    const loadProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const loadProfile = async (session) => {
       if (!session?.user) return;
 
       const meta = session.user.user_metadata;
@@ -406,7 +405,18 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
         }));
       }
     };
-    loadProfile();
+
+    // 초기 로드 — 이미 세션이 있으면 즉시, 없으면 onAuthStateChange를 기다림
+    supabase.auth.getSession().then(({ data: { session } }) => loadProfile(session));
+
+    // OAuth 콜백 타이밍 race 회피: 세션이 나중에 준비돼도 프로필을 다시 로드
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        loadProfile(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const [jobs, setJobs] = useState([]);
