@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
@@ -118,14 +119,14 @@ function LoginScreen({ onNext }) {
         <div className="animate-fade-up animation-delay-100 text-[22px] text-[#212121] font-extrabold text-center leading-snug">
           내 주변 일자리,<br />바로 알려드려요
         </div>
-        <div className="flex gap-5 mt-9 animate-fade-up animation-delay-150 w-full px-4">
-          <div className="flex-1 text-center py-4 rounded-2xl border border-[#EEEEEE] bg-white">
-            <div className="text-[26px] font-extrabold" style={{ color: '#E85C1E' }}>1,200+</div>
-            <div className="text-[14px] text-[#9E9E9E] font-medium mt-1">지금 뽑고 있어요</div>
+        <div className="flex gap-3.5 mt-9 animate-fade-up animation-delay-150 w-full px-4">
+          <div className="flex-1 text-center py-5 rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="text-[28px] font-black tracking-tight" style={{ color: '#E85C1E' }}>1,200+</div>
+            <div className="text-[13px] text-[#888780] font-medium mt-1.5">지금 뽑고 있어요</div>
           </div>
-          <div className="flex-1 text-center py-4 rounded-2xl border border-[#EEEEEE] bg-white">
-            <div className="text-[26px] font-extrabold" style={{ color: '#E85C1E' }}>8,500+</div>
-            <div className="text-[14px] text-[#9E9E9E] font-medium mt-1">이미 찾았어요</div>
+          <div className="flex-1 text-center py-5 rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="text-[28px] font-black tracking-tight" style={{ color: '#E85C1E' }}>8,500+</div>
+            <div className="text-[13px] text-[#888780] font-medium mt-1.5">이미 찾았어요</div>
           </div>
         </div>
       </div>
@@ -133,7 +134,7 @@ function LoginScreen({ onNext }) {
       {/* 하단 버튼 영역 */}
       <div className="px-6 pb-12 pt-5">
         <button
-          className="w-full py-[20px] px-6 border-none rounded-[28px] text-[19px] font-bold flex items-center justify-center gap-3 shadow-[0_2px_10px_rgba(254,229,0,0.3)] animate-fade-up animation-delay-200"
+          className="w-full py-[20px] px-6 border-none rounded-[28px] text-[19px] font-bold flex items-center justify-center gap-3 shadow-[0_4px_16px_rgba(254,229,0,0.35)] animate-fade-up animation-delay-200 active:scale-[0.97] transition-transform"
           style={{ background: '#FEE500', color: '#191919' }}
           onClick={handleKakao}
           disabled={loading}
@@ -346,9 +347,9 @@ function LocationScreen({ onGranted, onSkip }) {
 // ─────────────────────────────────────
 // 3) 메인 화면
 // ─────────────────────────────────────
-function MainScreen({ region, setRegion }) {
+function MainScreen({ region, setRegion, initialTab = 'home' }) {
   const [currentDistance, setCurrentDistance] = useState('3km');
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [favorites, setFavorites] = useState([]);
   const [profile, setProfile] = useState({
     name: '',
@@ -427,20 +428,10 @@ function MainScreen({ region, setRegion }) {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#F7F5F2' }}>
-      {/* 상태바 */}
-      <div className="flex justify-between items-center px-5 pt-3 pb-1 text-[13px] font-semibold" style={{ color: '#888780' }}>
-        <span>9:41</span>
-        <div className="flex gap-1.5 items-center">
-          <span className="text-[11px]">●●●●○</span>
-          <span className="text-[11px]">WiFi</span>
-          <span className="text-sm">🔋</span>
-        </div>
-      </div>
-
       {/* 헤더 */}
-      <div className="px-5 py-3 flex justify-between items-center" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center" style={{ background: '#E85C1E' }}>
+      <div className="px-5 py-3.5 flex justify-between items-center sticky top-0 z-50" style={{ background: 'rgba(250,250,248,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #EDE8E2' }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-[36px] h-[36px] rounded-[10px] flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
             <svg width="20" height="20" viewBox="0 0 52 52" fill="none">
               <path d="M26 4C17.16 4 10 11.16 10 20C10 31.5 26 48 26 48C26 48 42 31.5 42 20C42 11.16 34.84 4 26 4Z" fill="rgba(255,255,255,0.2)" stroke="white" strokeWidth="1.5"/>
               <circle cx="26" cy="15" r="4" fill="white"/>
@@ -451,30 +442,34 @@ function MainScreen({ region, setRegion }) {
               <line x1="30" y1="27" x2="33" y2="33" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
             </svg>
           </div>
-          <span className="text-[17px] font-bold tracking-tight"><span style={{ color: '#E85C1E' }}>일</span><span style={{ color: '#1A1A18' }}>손</span></span>
+          <span className="text-[18px] font-extrabold tracking-tight"><span style={{ color: '#E85C1E' }}>일</span><span style={{ color: '#1A1A18' }}>손</span></span>
         </div>
-        <button className="w-[34px] h-[34px] rounded-full flex items-center justify-center relative" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC' }}>
-          <span style={{ color: '#E85C1E', fontSize: '16px' }}>🔔</span>
-          <div className="absolute top-0 right-0 w-[7px] h-[7px] rounded-full" style={{ background: '#E85C1E', border: '1.5px solid white' }} />
+        <button className="w-[36px] h-[36px] rounded-full flex items-center justify-center relative active:scale-95 transition-transform" style={{ background: '#FFF5F0', border: '1.5px solid #FDDCCC' }}>
+          <span style={{ color: '#E85C1E', fontSize: '17px' }}>🔔</span>
+          <div className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full" style={{ background: '#E85C1E', border: '2px solid white' }} />
         </button>
       </div>
 
       {/* 위치 바 — 홈탭에서만 표시 */}
       {activeTab === 'home' && (
-        <div className="px-5 py-3 flex items-center" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
-          <div className="flex items-center gap-2.5 cursor-pointer">
-            <span style={{ color: '#E85C1E', fontSize: '18px' }}>📍</span>
-            <div>
-              <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>{region || '위치 미설정'} 근처</div>
-              <div className="text-[12px] font-medium mt-px" style={{ color: '#888780' }}>지금 내 위치에서 찾는 중</div>
+        <div className="px-5 py-2.5 flex items-center justify-between" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
+          <div className="flex items-center gap-2.5 cursor-pointer active:opacity-70 transition-opacity">
+            <div className="w-[32px] h-[32px] rounded-full flex items-center justify-center" style={{ background: '#FFF5F0' }}>
+              <span style={{ fontSize: '16px' }}>📍</span>
             </div>
-            <span className="text-[12px] ml-1" style={{ color: '#B4B2A9' }}>▼</span>
+            <div>
+              <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>{region || '위치 미설정'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span></div>
+              <div className="text-[11px] font-medium mt-px" style={{ color: '#888780' }}>지금 내 위치에서 찾는 중</div>
+            </div>
+          </div>
+          <div className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#E8F5E9', color: '#2E7D32' }}>
+            실시간
           </div>
         </div>
       )}
 
       {/* 스크롤 영역 */}
-      <div className="overflow-y-auto pb-20 [-webkit-overflow-scrolling:touch]" style={{ height: 'calc(100vh - 150px)' }}>
+      <div className="flex-1 overflow-y-auto pb-24 [-webkit-overflow-scrolling:touch]">
         {activeTab === 'home' && (
           <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} />
         )}
@@ -484,29 +479,30 @@ function MainScreen({ region, setRegion }) {
       </div>
 
       {/* 하단 탭 */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app flex justify-around pt-2.5 pb-7 z-[100]" style={{ background: '#FAFAF8', borderTop: '1px solid #EDE8E2' }}>
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app flex justify-around pt-2 pb-7 z-[100]" style={{ background: 'rgba(250,250,248,0.97)', backdropFilter: 'blur(12px)', borderTop: '1px solid #EDE8E2' }}>
         {[
-          { key: 'home', label: '홈' },
-          { key: 'favorites', label: '관심' },
-          { key: 'history', label: '지원내역' },
-          { key: 'profile', label: '내정보' },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            className="flex flex-col items-center gap-[3px] bg-transparent border-none py-1 px-3"
-            onClick={() => setActiveTab(tab.key)}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              {tab.key === 'home' && <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/>}
-              {tab.key === 'favorites' && <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/>}
-{tab.key === 'history' && <><rect x="4" y="3" width="16" height="18" rx="2" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill="none"/><line x1="8" y1="8" x2="16" y2="8" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="12" x2="16" y2="12" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/><line x1="8" y1="16" x2="12" y2="16" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.5"/></>}
-              {tab.key === 'profile' && <><circle cx="12" cy="8" r="4" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill={activeTab === tab.key ? '#E85C1E' : 'none'}/><path d="M4 21v-1a6 6 0 0112 0v1" stroke={activeTab === tab.key ? '#E85C1E' : '#B4B2A9'} strokeWidth="1.8" fill="none"/></>}
-            </svg>
-            <span className="text-[11px]" style={{ color: activeTab === tab.key ? '#E85C1E' : '#B4B2A9', fontWeight: activeTab === tab.key ? 600 : 400 }}>
-              {tab.label}
-            </span>
-          </button>
-        ))}
+          { key: 'home', label: '홈', emoji: '🏠' },
+          { key: 'favorites', label: '관심', emoji: '❤️' },
+          { key: 'history', label: '지원내역', emoji: '📋' },
+          { key: 'profile', label: '내정보', emoji: '👤' },
+        ].map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              className="flex flex-col items-center gap-[2px] bg-transparent border-none py-1.5 px-4 active:scale-90 transition-transform"
+              onClick={() => setActiveTab(tab.key)}
+            >
+              <div className="relative">
+                <span className="text-[22px]" style={{ opacity: isActive ? 1 : 0.45 }}>{tab.emoji}</span>
+                {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ background: '#E85C1E' }} />}
+              </div>
+              <span className="text-[11px] mt-0.5" style={{ color: isActive ? '#E85C1E' : '#B4B2A9', fontWeight: isActive ? 700 : 400 }}>
+                {tab.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -517,34 +513,44 @@ function ListView({ filtered, currentDistance, setCurrentDistance, favorites, to
   return (
     <div>
       {/* 거리 필터 */}
-      <div className="px-[18px] pb-3 pt-1 flex gap-2 overflow-x-auto">
+      <div className="px-4 pb-3 pt-3 flex gap-2 overflow-x-auto">
         {DISTANCES.filter(d => d !== '전체').map((d) => (
           <button
             key={d}
-            className="py-2 px-4 rounded-[20px] text-[13px] font-semibold whitespace-nowrap transition-colors"
+            className="py-2.5 px-5 rounded-full text-[14px] font-bold whitespace-nowrap transition-all active:scale-95"
             style={currentDistance === d
-              ? { background: '#FFF5F0', border: '1px solid #E85C1E', color: '#E85C1E' }
-              : { background: '#FAFAF8', border: '1px solid #EDE8E2', color: '#888780' }
+              ? { background: '#E85C1E', border: '1.5px solid #E85C1E', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(232,92,30,0.25)' }
+              : { background: '#FFFFFF', border: '1.5px solid #EDE8E2', color: '#888780' }
             }
             onClick={() => setCurrentDistance(d)}
           >
-            🚶 {d} 이내
+            {d} 이내
           </button>
         ))}
       </div>
 
       {/* 섹션 헤더 */}
-      <div className="px-[18px] pb-2 flex justify-between items-center">
-        <h2 className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>🚶 가까운 일자리</h2>
-        <span className="text-[13px] font-semibold" style={{ color: '#E85C1E' }}>{filtered.length}건 있어요</span>
+      <div className="px-4 pb-3 pt-1 flex justify-between items-center">
+        <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>가까운 일자리</h2>
+        <span className="text-[13px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>{filtered.length}건</span>
       </div>
 
       {/* 일자리 목록 */}
       <div className="pb-5">
-        <div className="flex flex-col gap-3 px-[18px]">
-          {filtered.map((job, i) => (
-            <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
-          ))}
+        <div className="flex flex-col gap-3.5 px-4">
+          {filtered.length > 0 ? (
+            filtered.map((job, i) => (
+              <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 animate-fade-up">
+              <div className="text-[52px] mb-4">🔍</div>
+              <div className="text-[18px] font-bold mb-2" style={{ color: '#1A1A18' }}>아직 일자리가 없어요</div>
+              <div className="text-[14px] text-center leading-relaxed" style={{ color: '#888780' }}>
+                거리를 늘려서 찾아보시거나<br />곧 새로운 일자리가 올라올 거예요
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -560,59 +566,65 @@ function JobCard({ job, index, isFav, toggleFav }) {
 
   return (
     <div
-      className="rounded-[16px] p-[16px] w-full animate-fade-up"
-      style={{ background: '#FAFAF8', border: '1px solid #EDE8E2', animationDelay: `${Math.min(index, 6) * 0.05}s` }}
+      className="rounded-[18px] p-[18px] w-full animate-fade-up active:scale-[0.98] transition-transform"
+      style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', animationDelay: `${Math.min(index, 6) * 0.06}s` }}
     >
-      {/* 뱃지 */}
-      <div className="flex gap-2 mb-3 items-center flex-wrap">
-        <span className="text-[12px] font-semibold py-[4px] px-2.5 rounded-[20px]" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC', color: '#E85C1E' }}>
-          🚶 {job.distance}
-        </span>
-        <span className="text-[12px] font-medium py-[4px] px-2.5 rounded-[20px]" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#5F5E5A' }}>
-          걸어서 {job.walkTime}
-        </span>
-        {job.isNew && (
-          <span className="text-[11px] font-semibold py-[4px] px-2.5 rounded-[20px] text-white ml-auto" style={{ background: '#E85C1E' }}>방금 올라왔어요</span>
-        )}
+      {/* 상단: 뱃지 + 하트 */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex gap-1.5 items-center flex-wrap">
+          <span className="text-[12px] font-bold py-[4px] px-2.5 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
+            🚶 {job.distance} · {job.walkTime}
+          </span>
+          {job.isNew && (
+            <span className="text-[11px] font-bold py-[4px] px-2.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg, #E85C1E, #FF7043)' }}>NEW</span>
+          )}
+        </div>
+        <button
+          className="w-[36px] h-[36px] border-none rounded-full flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
+          style={{ background: isFav ? '#FFF5F0' : '#F7F5F2' }}
+          onClick={() => toggleFav(job.id)}
+        >
+          <span className="text-[20px]">{isFav ? '❤️' : '🤍'}</span>
+        </button>
       </div>
 
       {/* 본문 */}
-      <div className="flex gap-3 items-start">
-        <div className="w-[40px] h-[40px] rounded-[10px] flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#EDE8E2' }}>
+      <div className="flex gap-3.5 items-start">
+        <div className="w-[44px] h-[44px] rounded-[12px] flex items-center justify-center text-[22px] flex-shrink-0" style={{ background: '#F7F5F2' }}>
           {job.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[16px] font-bold" style={{ color: '#1A1A18' }}>{job.title}</div>
-          <div className="text-[12px] mt-0.5 truncate" style={{ color: '#B4B2A9' }}>{job.company} · {job.location}</div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-[20px] font-bold" style={{ color: '#E85C1E', letterSpacing: '-0.5px' }}>{payType} {payAmount}</span>
-            {firstTag && <span className="text-[13px]" style={{ color: '#888780' }}>/ {firstTag}</span>}
-          </div>
-          <div className="flex gap-1.5 flex-wrap mt-2">
-            {job.tags.slice(1).map((t) => (
-              <span key={t} className="py-[3px] px-2.5 rounded-[6px] text-[12px]" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#5F5E5A' }}>
-                {t}
-              </span>
-            ))}
-          </div>
+          <div className="text-[17px] font-bold leading-snug" style={{ color: '#1A1A18' }}>{job.title}</div>
+          <div className="text-[13px] mt-1 truncate" style={{ color: '#888780' }}>{job.company} · {job.location}</div>
         </div>
       </div>
 
+      {/* 급여 */}
+      <div className="mt-3 py-2.5 px-3.5 rounded-[12px] flex items-center justify-between" style={{ background: '#FFF8F5' }}>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[21px] font-extrabold" style={{ color: '#E85C1E', letterSpacing: '-0.5px' }}>{payType} {payAmount}</span>
+          {firstTag && <span className="text-[13px] font-medium" style={{ color: '#888780' }}>/ {firstTag}</span>}
+        </div>
+      </div>
+
+      {/* 태그 */}
+      {job.tags.length > 1 && (
+        <div className="flex gap-1.5 flex-wrap mt-2.5">
+          {job.tags.slice(1).map((t) => (
+            <span key={t} className="py-[4px] px-2.5 rounded-full text-[12px] font-medium" style={{ background: '#F7F5F2', color: '#5F5E5A' }}>
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* 버튼 */}
-      <div className="mt-3 flex gap-2">
-        <button className="flex-1 h-[48px] text-white border-none rounded-[12px] text-[15px] font-semibold" style={{ background: '#E85C1E' }}>바로 지원하기</button>
-        <button className="w-[48px] h-[48px] border-none rounded-[12px] flex items-center justify-center flex-shrink-0" style={{ background: '#FEE500' }}>
-          <KakaoIcon size={20} />
+      <div className="mt-3.5 flex gap-2">
+        <button className="flex-1 h-[50px] text-white border-none rounded-[14px] text-[16px] font-bold active:scale-[0.97] transition-transform shadow-sm" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
+          바로 지원하기
         </button>
-        <button
-          className="w-[48px] h-[48px] border-none rounded-[12px] flex items-center justify-center flex-shrink-0"
-          style={isFav
-            ? { background: '#FFF5F0', border: '2px solid #E85C1E' }
-            : { background: '#F7F5F2', border: '2px solid #EDE8E2' }
-          }
-          onClick={() => toggleFav(job.id)}
-        >
-          <span className="text-[24px]">{isFav ? '❤️' : '🤍'}</span>
+        <button className="w-[50px] h-[50px] border-none rounded-[14px] flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform shadow-sm" style={{ background: '#FEE500' }}>
+          <KakaoIcon size={20} />
         </button>
       </div>
     </div>
@@ -653,6 +665,64 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     });
   };
 
+  const [careers, setCareers] = useState([
+    { id: 1, company: '다웰서비스', role: '아파트 경비', startDate: '2020.03', endDate: '2023.12' },
+  ]);
+  const [showCareerForm, setShowCareerForm] = useState(false);
+  const [newCareer, setNewCareer] = useState({ company: '', role: '', startDate: '', endDate: '' });
+  const [isCurrentJob, setIsCurrentJob] = useState(false);
+  const [startYear, setStartYear] = useState('');
+  const [startMonth, setStartMonth] = useState('');
+  const [endYear, setEndYear] = useState('');
+  const [endMonth, setEndMonth] = useState('');
+
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [];
+  for (let y = currentYear; y >= 2000; y--) yearOptions.push(y);
+  const monthOptions = [];
+  for (let m = 1; m <= 12; m++) monthOptions.push(m);
+
+  const openCareerForm = () => {
+    setNewCareer({ company: '', role: '', startDate: '', endDate: '' });
+    setStartYear('');
+    setStartMonth('');
+    setEndYear('');
+    setEndMonth('');
+    setIsCurrentJob(false);
+    setShowCareerForm(true);
+  };
+
+  const closeCareerForm = () => {
+    setShowCareerForm(false);
+  };
+
+  const canSubmitCareer = newCareer.company && newCareer.role && startYear && startMonth;
+
+  const addCareer = () => {
+    if (!canSubmitCareer) return;
+    const sd = `${startYear}.${String(startMonth).padStart(2, '0')}`;
+    const ed = isCurrentJob ? '' : (endYear && endMonth ? `${endYear}.${String(endMonth).padStart(2, '0')}` : '');
+    setCareers(prev => [...prev, { company: newCareer.company, role: newCareer.role, startDate: sd, endDate: ed, id: Date.now() }]);
+    closeCareerForm();
+    triggerSave();
+  };
+
+  const removeCareer = (id) => {
+    setCareers(prev => prev.filter(c => c.id !== id));
+    triggerSave();
+  };
+
+  const calcDuration = (start, end) => {
+    if (!start) return '';
+    const [sy, sm] = start.split('.').map(Number);
+    const endDate = end || `${new Date().getFullYear()}.${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    const [ey, em] = endDate.split('.').map(Number);
+    const months = (ey - sy) * 12 + (em - sm);
+    const y = Math.floor(months / 12);
+    const m = months % 12;
+    return y > 0 ? `${y}년 ${m}개월` : `${m}개월`;
+  };
+
   const [toastVisible, setToastVisible] = useState(false);
   const triggerSave = async () => {
     setToastVisible(true);
@@ -672,16 +742,33 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
     try {
       if (workerId) {
-        // 기존 프로필 업데이트
         await supabase.from('workers').update(payload).eq('id', workerId);
       } else {
-        // 신규 프로필 생성
         const { data } = await supabase.from('workers').insert([payload]).select().single();
         if (data) setWorkerId(data.id);
       }
     } catch (e) {
       console.error('프로필 저장 오류:', e);
     }
+  };
+
+  const selectStyle = {
+    border: '1.5px solid #EDE8E2',
+    background: '#fff',
+    color: '#1A1A18',
+    WebkitAppearance: 'none',
+    appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23888780' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 14px center',
+    backgroundSize: '12px',
+  };
+
+  const selectDisabledStyle = {
+    ...selectStyle,
+    background: '#F7F5F2',
+    color: '#B4B2A9',
+    borderColor: '#EDE8E2',
   };
 
   return (
@@ -692,9 +779,9 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
       </div>
 
       {/* 헤더 */}
-      <div className="px-4 py-4" style={{ background: '#E85C1E' }}>
-        <div className="text-[19px] font-medium text-white">내 정보</div>
-        <div className="text-[12px] text-white/80 mt-0.5">일자리 매칭에 사용됩니다</div>
+      <div className="px-5 py-5" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
+        <div className="text-[22px] font-extrabold text-white">내 정보</div>
+        <div className="text-[13px] text-white/70 mt-1">일자리 매칭에 사용됩니다</div>
       </div>
 
       <div className="p-4 flex flex-col gap-3">
@@ -795,12 +882,29 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
         </ProfileSection>
 
         {/* 경력 (선택) */}
-        <ProfileSection icon="📋" iconBg="#E3F2FD" title="경력" badge="선택">
-          <div className="px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}>
-            <div className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>다웰서비스 — 아파트 경비</div>
-            <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>2020.03 ~ 2023.12 (3년 9개월)</div>
-          </div>
-          <button className="w-full py-2.5 rounded-lg text-center text-[13px]" style={{ border: '1px dashed #EDE8E2', color: '#888780', background: 'transparent' }}>
+        <ProfileSection icon="📋" iconBg="#E3F2FD" title="경력" badge={`${careers.length}건`}>
+          {careers.map((c) => (
+            <div key={c.id} className="flex items-start gap-2">
+              <div className="flex-1 px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}>
+                <div className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>{c.company} — {c.role}</div>
+                <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>
+                  {c.startDate} ~ {c.endDate || '현재'} ({calcDuration(c.startDate, c.endDate)})
+                </div>
+              </div>
+              <button
+                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-1.5 active:scale-90 transition-transform"
+                style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}
+                onClick={() => removeCareer(c.id)}
+              >
+                <span className="text-[13px]" style={{ color: '#888780' }}>✕</span>
+              </button>
+            </div>
+          ))}
+          <button
+            className="w-full py-3.5 rounded-xl text-center text-[15px] font-bold active:scale-[0.97] transition-transform"
+            style={{ border: 'none', color: '#FFFFFF', background: '#E85C1E', boxShadow: '0 2px 8px rgba(232,92,30,0.3)' }}
+            onClick={openCareerForm}
+          >
             + 경력 추가하기
           </button>
         </ProfileSection>
@@ -819,6 +923,165 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
         <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
         <span className="text-[13px]" style={{ color: '#888780' }}>변경사항이 자동으로 저장돼요</span>
       </div>
+
+      {/* ── 바텀시트 모달: 경력 추가 ── */}
+      {showCareerForm && (
+        <div className="fixed inset-0 z-[200]">
+          {/* 오버레이 */}
+          <div
+            className="absolute inset-0 animate-overlay-in"
+            style={{ background: 'rgba(0,0,0,0.5)' }}
+            onClick={closeCareerForm}
+          />
+          {/* 시트 */}
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[28px] animate-slide-up-sheet"
+            style={{ maxHeight: '85vh', overflowY: 'auto' }}
+          >
+            {/* 드래그 핸들 */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: '#DDD' }} />
+            </div>
+
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-6 py-3">
+              <div className="text-[20px] font-extrabold" style={{ color: '#1A1A18' }}>경력 추가</div>
+              <button
+                className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                style={{ background: '#F7F5F2' }}
+                onClick={closeCareerForm}
+              >
+                <span className="text-[18px]" style={{ color: '#888780' }}>✕</span>
+              </button>
+            </div>
+
+            {/* 본문 */}
+            <div className="px-6 pb-4 flex flex-col gap-3.5">
+              {/* 회사명 */}
+              <div>
+                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                  회사명 <span style={{ color: '#E85C1E' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="예) 삼성물산, 대림관리"
+                  value={newCareer.company}
+                  onChange={(e) => setNewCareer(p => ({ ...p, company: e.target.value }))}
+                  className="w-full px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                  style={{ border: '1.5px solid #EDE8E2', background: '#fff', color: '#1A1A18' }}
+                />
+              </div>
+
+              {/* 직종 */}
+              <div>
+                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                  직종 <span style={{ color: '#E85C1E' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="예) 아파트 경비, 건물 청소"
+                  value={newCareer.role}
+                  onChange={(e) => setNewCareer(p => ({ ...p, role: e.target.value }))}
+                  className="w-full px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                  style={{ border: '1.5px solid #EDE8E2', background: '#fff', color: '#1A1A18' }}
+                />
+              </div>
+
+              {/* 시작일 */}
+              <div>
+                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                  시작일 <span style={{ color: '#E85C1E' }}>*</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={startYear}
+                    onChange={(e) => setStartYear(e.target.value)}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={selectStyle}
+                  >
+                    <option value="" disabled>년도</option>
+                    {yearOptions.map(y => <option key={y} value={y}>{y}년</option>)}
+                  </select>
+                  <select
+                    value={startMonth}
+                    onChange={(e) => setStartMonth(e.target.value)}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={selectStyle}
+                  >
+                    <option value="" disabled>월</option>
+                    {monthOptions.map(m => <option key={m} value={m}>{m}월</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* 현재 재직 중 체크박스 */}
+              <button
+                className="flex items-center gap-3 py-1"
+                onClick={() => setIsCurrentJob(v => !v)}
+              >
+                <span
+                  className="w-[24px] h-[24px] rounded-md flex items-center justify-center flex-shrink-0"
+                  style={isCurrentJob
+                    ? { background: '#E85C1E', border: '2px solid #E85C1E' }
+                    : { background: '#fff', border: '2px solid #EDE8E2' }
+                  }
+                >
+                  {isCurrentJob && <ProfileCheckMark />}
+                </span>
+                <span className="text-[15px] font-medium" style={{ color: '#1A1A18' }}>현재 재직 중</span>
+              </button>
+
+              {/* 종료일 */}
+              <div>
+                <label className="block text-[14px] font-bold mb-1.5" style={{ color: isCurrentJob ? '#B4B2A9' : '#1A1A18' }}>
+                  종료일
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={endYear}
+                    onChange={(e) => setEndYear(e.target.value)}
+                    disabled={isCurrentJob}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={isCurrentJob ? selectDisabledStyle : selectStyle}
+                  >
+                    <option value="" disabled>{isCurrentJob ? '—' : '년도'}</option>
+                    {yearOptions.map(y => <option key={y} value={y}>{y}년</option>)}
+                  </select>
+                  <select
+                    value={endMonth}
+                    onChange={(e) => setEndMonth(e.target.value)}
+                    disabled={isCurrentJob}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={isCurrentJob ? selectDisabledStyle : selectStyle}
+                  >
+                    <option value="" disabled>{isCurrentJob ? '—' : '월'}</option>
+                    {monthOptions.map(m => <option key={m} value={m}>{m}월</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 버튼 */}
+            <div className="px-6 pb-8 pt-2 flex gap-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
+              <button
+                className="flex-1 py-4 rounded-xl text-[16px] font-medium border-none active:scale-[0.97] transition-transform"
+                style={{ background: '#F7F5F2', color: '#888780' }}
+                onClick={closeCareerForm}
+              >
+                취소
+              </button>
+              <button
+                className="flex-[2] py-4 rounded-xl text-[16px] font-bold text-white border-none active:scale-[0.97] transition-transform"
+                style={{ background: canSubmitCareer ? '#E85C1E' : '#CCC', boxShadow: canSubmitCareer ? '0 2px 8px rgba(232,92,30,0.3)' : 'none' }}
+                onClick={addCareer}
+                disabled={!canSubmitCareer}
+              >
+                추가하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -830,11 +1093,13 @@ function FavoritesView({ favorites, toggleFav, jobs }) {
 
   if (favJobs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center px-5 pt-20">
-        <div className="text-[48px] mb-4">♡</div>
-        <div className="text-[18px] font-bold mb-2" style={{ color: '#1A1A18' }}>아직 관심 일자리가 없어요</div>
+      <div className="flex flex-col items-center justify-center px-5 pt-20 animate-fade-up">
+        <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center mb-5" style={{ background: '#FFF5F0' }}>
+          <span className="text-[40px]">🤍</span>
+        </div>
+        <div className="text-[19px] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 관심 일자리가 없어요</div>
         <div className="text-[15px] text-center leading-relaxed" style={{ color: '#888780' }}>
-          일자리 카드의 ♡를 눌러보세요
+          마음에 드는 일자리의 하트를 눌러<br />여기서 모아볼 수 있어요
         </div>
       </div>
     );
@@ -858,11 +1123,13 @@ function FavoritesView({ favorites, toggleFav, jobs }) {
 // ─── 지원내역 ───
 function HistoryView() {
   return (
-    <div className="flex flex-col items-center justify-center px-5 pt-20">
-      <div className="text-[48px] mb-4">📋</div>
-      <div className="text-[18px] font-bold mb-2" style={{ color: '#1A1A18' }}>아직 지원한 곳이 없어요</div>
+    <div className="flex flex-col items-center justify-center px-5 pt-20 animate-fade-up">
+      <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center mb-5" style={{ background: '#F0F4FF' }}>
+        <span className="text-[40px]">📋</span>
+      </div>
+      <div className="text-[19px] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 지원한 곳이 없어요</div>
       <div className="text-[15px] text-center leading-relaxed" style={{ color: '#888780' }}>
-        일자리에 지원하면<br />여기서 확인할 수 있어요
+        마음에 드는 일자리에 지원하면<br />진행 상황을 여기서 확인할 수 있어요
       </div>
     </div>
   );
@@ -874,6 +1141,8 @@ function HistoryView() {
 export default function HomePage() {
   const [screen, setScreen] = useState('loading');
   const [region, setRegion] = useState('');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
 
   // 카카오 로그인 후 세션 확인
   useEffect(() => {
@@ -882,7 +1151,9 @@ export default function HomePage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeout);
       if (session) {
-        setScreen('location');
+        // ?tab= 파라미터가 있으면 이미 온보딩 완료된 사용자로 간주하고 바로 메인으로 이동
+        // (JobDetailPage에서 /?tab=profile 같은 딥링크로 들어오는 경우 처리)
+        setScreen(tabParam ? 'main' : 'location');
       } else {
         setScreen('login');
       }
@@ -907,11 +1178,22 @@ export default function HomePage() {
     <div className="flex justify-center min-h-screen bg-[#f0f0ed]">
       <div className="max-w-app w-full min-h-screen bg-[#FAFAF8] relative overflow-hidden sm:rounded-[32px] sm:shadow-[0_8px_40px_rgba(0,0,0,0.12)] sm:my-5 sm:min-h-[90vh]">
         {screen === 'loading' && (
-          <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#F5F0EB' }}>
-            <div className="w-[88px] h-[88px] rounded-[22px] flex items-center justify-center mb-4" style={{ background: '#E85C1E' }}>
-              <AppIcon />
+          <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: 'linear-gradient(180deg, #F5F0EB 0%, #FFF5F0 100%)' }}>
+            <div className="animate-fade-up">
+              <div className="w-[96px] h-[96px] rounded-[24px] flex items-center justify-center mb-5 shadow-[0_8px_28px_rgba(232,92,30,0.3)]" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
+                <AppIcon />
+              </div>
             </div>
-            <div className="text-[14px]" style={{ color: '#888780' }}>로딩 중...</div>
+            <div className="animate-fade-up animation-delay-100 flex items-baseline gap-px mb-3">
+              <span className="text-[32px] font-black tracking-[-2px]" style={{ color: '#E85C1E' }}>일</span>
+              <span className="text-[32px] font-black text-[#212121] tracking-[-2px]">손</span>
+            </div>
+            <div className="animate-fade-up animation-delay-150 text-[14px] font-medium" style={{ color: '#888780' }}>
+              걸어서 갈 수 있는 일자리
+            </div>
+            <div className="animate-fade-up animation-delay-200 mt-6">
+              <div className="w-8 h-8 border-[3px] rounded-full animate-spin" style={{ borderColor: 'rgba(232,92,30,0.15)', borderTopColor: '#E85C1E' }} />
+            </div>
           </div>
         )}
         {screen === 'login' && <LoginScreen onNext={() => setScreen('location')} />}
@@ -921,7 +1203,7 @@ export default function HomePage() {
             onSkip={() => { setRegion('위치 미설정'); setScreen('main'); }}
           />
         )}
-        {screen === 'main' && <MainScreen region={region} setRegion={setRegion} />}
+        {screen === 'main' && <MainScreen region={region} setRegion={setRegion} initialTab={tabParam || 'home'} />}
       </div>
     </div>
   );
