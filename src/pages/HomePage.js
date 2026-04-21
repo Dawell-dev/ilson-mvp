@@ -1,3 +1,10 @@
+/**
+ * 변경 요약 (2026-04-21, Phase A: 이력서 강화)
+ * - 마이페이지 → "내 이력서" 네이밍 전환 (헤더/하단 안내 문구)
+ * - 자격증 섹션 신규 (추천 칩 + 바텀시트 모달, 만료없음 체크)
+ * - 운전 가능 섹션 신규 (1종/2종/없음 단일 선택, 안내 문구)
+ * - 자격증/운전은 이번엔 local state 유지 (DB 전환은 경력과 함께 추후)
+ */
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -359,6 +366,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
     times: ['오전', '오후'],
     jobs: [],
     distance: '1km',
+    driverLicense: 'none',
   });
   const [workerId, setWorkerId] = useState(null);
   const [kakaoId, setKakaoId] = useState(null);
@@ -637,6 +645,12 @@ const PROFILE_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const PROFILE_TIMES = ['오전', '오후', '야간'];
 const PROFILE_JOBS = ['아파트 경비', '상가·건물 청소', '조경', '주차 관리', '택배·물류 분류'];
 const PROFILE_DISTS = ['500m', '1km', '3km', '무관'];
+const CERT_SUGGESTIONS = ['경비원 신임교육', '건물관리사', '조경기능사', '전기기능사', '지게차운전기능사'];
+const DRIVER_LICENSES = [
+  { key: 'type1', label: '1종 보통', hint: '🚛 대형 차량·트럭 운전 가능' },
+  { key: 'type2', label: '2종 보통', hint: '🚗 승용차·소형 화물 운전 가능' },
+  { key: 'none', label: '없음', hint: '도보 출퇴근만 가능해요' },
+];
 
 function ProfileCheckMark() {
   return (
@@ -675,6 +689,44 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   const [startMonth, setStartMonth] = useState('');
   const [endYear, setEndYear] = useState('');
   const [endMonth, setEndMonth] = useState('');
+
+  // 자격증
+  const [certifications, setCertifications] = useState([
+    { id: 1, name: '경비원 신임교육', issuedDate: '2022.05', expiryDate: '' },
+  ]);
+  const [showCertForm, setShowCertForm] = useState(false);
+  const [newCert, setNewCert] = useState({ name: '' });
+  const [certYear, setCertYear] = useState('');
+  const [certMonth, setCertMonth] = useState('');
+  const [certNoExpiry, setCertNoExpiry] = useState(true);
+  const [certExpYear, setCertExpYear] = useState('');
+  const [certExpMonth, setCertExpMonth] = useState('');
+
+  const openCertForm = () => {
+    setNewCert({ name: '' });
+    setCertYear('');
+    setCertMonth('');
+    setCertNoExpiry(true);
+    setCertExpYear('');
+    setCertExpMonth('');
+    setShowCertForm(true);
+  };
+  const closeCertForm = () => setShowCertForm(false);
+  const canSubmitCert = newCert.name && certYear && certMonth;
+  const addCertification = () => {
+    if (!canSubmitCert) return;
+    const issued = `${certYear}.${String(certMonth).padStart(2, '0')}`;
+    const expiry = certNoExpiry
+      ? ''
+      : certExpYear && certExpMonth ? `${certExpYear}.${String(certExpMonth).padStart(2, '0')}` : '';
+    setCertifications(prev => [...prev, { id: Date.now(), name: newCert.name, issuedDate: issued, expiryDate: expiry }]);
+    closeCertForm();
+    triggerSave();
+  };
+  const removeCertification = (id) => {
+    setCertifications(prev => prev.filter(c => c.id !== id));
+    triggerSave();
+  };
 
   const currentYear = new Date().getFullYear();
   const yearOptions = [];
@@ -780,8 +832,8 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
       {/* 헤더 */}
       <div className="px-5 py-5" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
-        <div className="text-[22px] font-extrabold text-white">내 정보</div>
-        <div className="text-[13px] text-white/70 mt-1">일자리 매칭에 사용됩니다</div>
+        <div className="text-[22px] font-extrabold text-white">내 이력서</div>
+        <div className="text-[13px] text-white/70 mt-1">지원할 때 자동으로 전달돼요</div>
       </div>
 
       <div className="p-4 flex flex-col gap-3">
@@ -881,6 +933,58 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
           </div>
         </ProfileSection>
 
+        {/* 자격증 */}
+        <ProfileSection icon="🏅" iconBg="#FFF3E0" title="자격증" badge={`${certifications.length}건`}>
+          {certifications.map((c) => (
+            <div key={c.id} className="flex items-start gap-2">
+              <div className="flex-1 px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}>
+                <div className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>{c.name}</div>
+                <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>
+                  취득 {c.issuedDate}{c.expiryDate ? ` · 만료 ${c.expiryDate}` : ' · 만료없음'}
+                </div>
+              </div>
+              <button
+                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-1.5 active:scale-90 transition-transform"
+                style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}
+                onClick={() => removeCertification(c.id)}
+              >
+                <span className="text-[13px]" style={{ color: '#888780' }}>✕</span>
+              </button>
+            </div>
+          ))}
+          <button
+            className="w-full py-3.5 rounded-xl text-center text-[15px] font-bold active:scale-[0.97] transition-transform"
+            style={{ border: 'none', color: '#FFFFFF', background: '#E85C1E', boxShadow: '0 2px 8px rgba(232,92,30,0.3)' }}
+            onClick={openCertForm}
+          >
+            + 자격증 추가하기
+          </button>
+        </ProfileSection>
+
+        {/* 운전 가능 */}
+        <ProfileSection icon="🚗" iconBg="#E3F2FD" title="운전 가능">
+          <div className="flex gap-1.5">
+            {DRIVER_LICENSES.map(({ key, label }) => {
+              const on = profile.driverLicense === key;
+              return (
+                <button
+                  key={key}
+                  className="flex-1 flex items-center justify-center py-2.5 rounded-lg text-[14px] font-medium"
+                  style={on
+                    ? { background: '#E85C1E', color: '#fff', border: '1px solid #E85C1E' }
+                    : { background: '#F7F5F2', color: '#888780', border: '1px solid #EDE8E2' }}
+                  onClick={() => { setProfile(p => ({ ...p, driverLicense: key })); triggerSave(); }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-[13px] mt-1" style={{ color: '#888780' }}>
+            {DRIVER_LICENSES.find(d => d.key === profile.driverLicense)?.hint || DRIVER_LICENSES[2].hint}
+          </div>
+        </ProfileSection>
+
         {/* 경력 (선택) */}
         <ProfileSection icon="📋" iconBg="#E3F2FD" title="경력" badge={`${careers.length}건`}>
           {careers.map((c) => (
@@ -921,7 +1025,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
       {/* 자동저장 안내 */}
       <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: '#FAFAF8', borderTop: '1px solid #EDE8E2' }}>
         <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-        <span className="text-[13px]" style={{ color: '#888780' }}>변경사항이 자동으로 저장돼요</span>
+        <span className="text-[13px]" style={{ color: '#888780' }}>이력서가 자동으로 업데이트돼요</span>
       </div>
 
       {/* ── 바텀시트 모달: 경력 추가 ── */}
@@ -1075,6 +1179,160 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 style={{ background: canSubmitCareer ? '#E85C1E' : '#CCC', boxShadow: canSubmitCareer ? '0 2px 8px rgba(232,92,30,0.3)' : 'none' }}
                 onClick={addCareer}
                 disabled={!canSubmitCareer}
+              >
+                추가하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 바텀시트 모달: 자격증 추가 ── */}
+      {showCertForm && (
+        <div className="fixed inset-0 z-[200]">
+          <div
+            className="absolute inset-0 animate-overlay-in"
+            style={{ background: 'rgba(0,0,0,0.5)' }}
+            onClick={closeCertForm}
+          />
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[28px] animate-slide-up-sheet"
+            style={{ maxHeight: '85vh', overflowY: 'auto' }}
+          >
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: '#DDD' }} />
+            </div>
+
+            <div className="flex items-center justify-between px-6 py-3">
+              <div className="text-[20px] font-extrabold" style={{ color: '#1A1A18' }}>자격증 추가</div>
+              <button
+                className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                style={{ background: '#F7F5F2' }}
+                onClick={closeCertForm}
+              >
+                <span className="text-[18px]" style={{ color: '#888780' }}>✕</span>
+              </button>
+            </div>
+
+            <div className="px-6 pb-4 flex flex-col gap-3.5">
+              {/* 자격증명 */}
+              <div>
+                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                  자격증명 <span style={{ color: '#E85C1E' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="예: 경비원 신임교육 이수"
+                  value={newCert.name}
+                  onChange={(e) => setNewCert({ name: e.target.value })}
+                  className="w-full px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                  style={{ border: '1.5px solid #EDE8E2', background: '#fff', color: '#1A1A18' }}
+                />
+                <div className="flex gap-1.5 flex-wrap mt-2">
+                  {CERT_SUGGESTIONS.map(s => {
+                    const on = newCert.name === s;
+                    return (
+                      <button
+                        key={s}
+                        className="py-1.5 px-3 rounded-full text-[13px] font-medium active:scale-95 transition-transform"
+                        style={on
+                          ? { background: '#FFF5F0', border: '1.5px solid #E85C1E', color: '#E85C1E' }
+                          : { background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#5F5E5A' }}
+                        onClick={() => setNewCert({ name: s })}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 취득일 */}
+              <div>
+                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                  취득일 <span style={{ color: '#E85C1E' }}>*</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={certYear}
+                    onChange={(e) => setCertYear(e.target.value)}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={selectStyle}
+                  >
+                    <option value="" disabled>년도</option>
+                    {yearOptions.map(y => <option key={y} value={y}>{y}년</option>)}
+                  </select>
+                  <select
+                    value={certMonth}
+                    onChange={(e) => setCertMonth(e.target.value)}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={selectStyle}
+                  >
+                    <option value="" disabled>월</option>
+                    {monthOptions.map(m => <option key={m} value={m}>{m}월</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* 만료없음 */}
+              <button
+                className="flex items-center gap-3 py-1"
+                onClick={() => setCertNoExpiry(v => !v)}
+              >
+                <span
+                  className="w-[24px] h-[24px] rounded-md flex items-center justify-center flex-shrink-0"
+                  style={certNoExpiry
+                    ? { background: '#E85C1E', border: '2px solid #E85C1E' }
+                    : { background: '#fff', border: '2px solid #EDE8E2' }}
+                >
+                  {certNoExpiry && <ProfileCheckMark />}
+                </span>
+                <span className="text-[15px] font-medium" style={{ color: '#1A1A18' }}>만료없음</span>
+              </button>
+
+              {/* 만료일 */}
+              <div>
+                <label className="block text-[14px] font-bold mb-1.5" style={{ color: certNoExpiry ? '#B4B2A9' : '#1A1A18' }}>
+                  만료일
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={certExpYear}
+                    onChange={(e) => setCertExpYear(e.target.value)}
+                    disabled={certNoExpiry}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={certNoExpiry ? selectDisabledStyle : selectStyle}
+                  >
+                    <option value="" disabled>{certNoExpiry ? '—' : '년도'}</option>
+                    {yearOptions.map(y => <option key={y} value={y}>{y}년</option>)}
+                  </select>
+                  <select
+                    value={certExpMonth}
+                    onChange={(e) => setCertExpMonth(e.target.value)}
+                    disabled={certNoExpiry}
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    style={certNoExpiry ? selectDisabledStyle : selectStyle}
+                  >
+                    <option value="" disabled>{certNoExpiry ? '—' : '월'}</option>
+                    {monthOptions.map(m => <option key={m} value={m}>{m}월</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pb-8 pt-2 flex gap-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
+              <button
+                className="flex-1 py-4 rounded-xl text-[16px] font-medium border-none active:scale-[0.97] transition-transform"
+                style={{ background: '#F7F5F2', color: '#888780' }}
+                onClick={closeCertForm}
+              >
+                취소
+              </button>
+              <button
+                className="flex-[2] py-4 rounded-xl text-[16px] font-bold text-white border-none active:scale-[0.97] transition-transform"
+                style={{ background: canSubmitCert ? '#E85C1E' : '#CCC', boxShadow: canSubmitCert ? '0 2px 8px rgba(232,92,30,0.3)' : 'none' }}
+                onClick={addCertification}
+                disabled={!canSubmitCert}
               >
                 추가하기
               </button>
