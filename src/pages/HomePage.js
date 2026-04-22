@@ -688,7 +688,10 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   const toggleArr = (key, val) => {
     setProfile(p => {
       const arr = p[key] || [];
-      return { ...p, [key]: arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val] };
+      const newArr = arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val];
+      const next = { ...p, [key]: newArr };
+      triggerSave(next);
+      return next;
     });
   };
 
@@ -785,7 +788,9 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   };
 
   const [toastVisible, setToastVisible] = useState(false);
-  const triggerSave = async () => {
+  const triggerSave = async (overrideProfile = null) => {
+    const current = overrideProfile || profile;
+
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 1800);
 
@@ -793,11 +798,11 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     if (!kakaoId) return;
 
     const payload = {
-      name: profile.name,
-      phone: profile.phone || `kakao_${kakaoId}`,
+      name: current.name,
+      phone: current.phone || `kakao_${kakaoId}`,
       address: region || '',
-      job_types: profile.jobs,
-      available_times: [...profile.days, ...profile.times],
+      job_types: current.jobs,
+      available_times: [...(current.days || []), ...(current.times || [])],
       kakao_id: kakaoId,
     };
 
@@ -877,7 +882,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
               return (
                 <button key={d} className="py-2 rounded-lg text-[14px] font-medium text-center"
                   style={on ? { background: '#E85C1E', color: '#fff', border: '1px solid #E85C1E' } : { background: '#F7F5F2', color: '#888780', border: '1px solid #EDE8E2' }}
-                  onClick={() => { toggleArr('days', d); triggerSave(); }}
+                  onClick={() => toggleArr('days', d)}
                 >{d}</button>
               );
             })}
@@ -890,7 +895,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 return (
                   <button key={t} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[14px]"
                     style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: on ? '#1A1A18' : '#888780' }}
-                    onClick={() => { toggleArr('times', t); triggerSave(); }}
+                    onClick={() => toggleArr('times', t)}
                   >
                     <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
                       style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#fff', border: '1.5px solid #EDE8E2' }}
@@ -911,7 +916,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
               return (
                 <button key={job} className="flex items-center gap-3 py-3 text-left"
                   style={{ borderBottom: i < PROFILE_JOBS.length - 1 ? '1px solid #EDE8E2' : 'none' }}
-                  onClick={() => { toggleArr('jobs', job); triggerSave(); }}
+                  onClick={() => toggleArr('jobs', job)}
                 >
                   <span className="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0"
                     style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#F7F5F2', border: '1.5px solid #EDE8E2' }}
@@ -929,7 +934,11 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 return (
                   <button key={d} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[13px]"
                     style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: on ? '#1A1A18' : '#888780', fontWeight: on ? 500 : 400 }}
-                    onClick={() => { setProfile(p => ({ ...p, distance: d })); triggerSave(); }}
+                    onClick={() => setProfile(p => {
+                      const next = { ...p, distance: d };
+                      triggerSave(next);
+                      return next;
+                    })}
                   >
                     <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
                       style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#fff', border: '1.5px solid #EDE8E2' }}
@@ -982,7 +991,11 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                   style={on
                     ? { background: '#E85C1E', color: '#fff', border: '1px solid #E85C1E' }
                     : { background: '#F7F5F2', color: '#888780', border: '1px solid #EDE8E2' }}
-                  onClick={() => { setProfile(p => ({ ...p, driverLicense: key })); triggerSave(); }}
+                  onClick={() => setProfile(p => {
+                    const next = { ...p, driverLicense: key };
+                    triggerSave(next);
+                    return next;
+                  })}
                 >
                   {label}
                 </button>
