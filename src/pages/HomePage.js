@@ -374,14 +374,14 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
 
   // 카카오 로그인 + workers 테이블 프로필 로드
   useEffect(() => {
-    const loadProfile = async (session) => {
+    const hydrateProfile = async (session) => {
       if (!session?.user) return;
 
       const meta = session.user.user_metadata;
       const kId = meta?.provider_id;
       setKakaoId(kId);
 
-      // 기본 카카오 정보
+      // 카카오 기본 정보 먼저 반영
       setProfile(prev => ({
         ...prev,
         name: meta?.name || meta?.full_name || '사용자',
@@ -389,7 +389,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
         avatar_url: meta?.avatar_url || '',
       }));
 
-      // workers 테이블에서 프로필 조회
+      // workers 조회 및 병합
       const { data: worker } = await supabase
         .from('workers')
         .select('*')
@@ -407,13 +407,15 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
       }
     };
 
-    // 초기 로드 — 이미 세션이 있으면 즉시, 없으면 onAuthStateChange를 기다림
-    supabase.auth.getSession().then(({ data: { session } }) => loadProfile(session));
+    // 초기 세션 체크
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      hydrateProfile(session);
+    });
 
-    // OAuth 콜백 타이밍 race 회피: 세션이 나중에 준비돼도 프로필을 다시 로드
+    // 세션 변화 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        loadProfile(session);
+        hydrateProfile(session);
       }
     });
 
