@@ -367,6 +367,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
     jobs: [],
     distance: '1km',
     driverLicense: 'none',
+    bio: '',
   });
   const [workerId, setWorkerId] = useState(null);
   const [kakaoId, setKakaoId] = useState(null);
@@ -689,9 +690,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     });
   };
 
-  const [careers, setCareers] = useState([
-    { id: 1, company: '다웰서비스', role: '아파트 경비', startDate: '2020.03', endDate: '2023.12' },
-  ]);
+  const [careers, setCareers] = useState([]);
   const [showCareerForm, setShowCareerForm] = useState(false);
   const [newCareer, setNewCareer] = useState({ company: '', role: '', startDate: '', endDate: '' });
   const [isCurrentJob, setIsCurrentJob] = useState(false);
@@ -701,9 +700,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   const [endMonth, setEndMonth] = useState('');
 
   // 자격증
-  const [certifications, setCertifications] = useState([
-    { id: 1, name: '경비원 신임교육', issuedDate: '2022.05', expiryDate: '' },
-  ]);
+  const [certifications, setCertifications] = useState([]);
   const [showCertForm, setShowCertForm] = useState(false);
   const [newCert, setNewCert] = useState({ name: '' });
   const [certYear, setCertYear] = useState('');
@@ -1025,9 +1022,14 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
         {/* 한 줄 소개 (선택) */}
         <ProfileSection icon="✏️" iconBg="#F3E5F5" title="한 줄 소개" badge="선택">
-          <div className="text-[14px] leading-relaxed px-3 py-2.5 rounded-lg min-h-[64px]" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#1A1A18' }}>
-            성실하게 일하겠습니다. 경비 경험 있습니다.
-          </div>
+          <textarea
+            className="w-full text-[14px] leading-relaxed px-3 py-2.5 rounded-lg min-h-[64px] outline-none resize-none"
+            style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#1A1A18' }}
+            placeholder="간단한 자기소개를 입력해주세요"
+            value={profile.bio || ''}
+            onChange={(e) => setProfile(p => ({ ...p, bio: e.target.value }))}
+            onBlur={() => triggerSave()}
+          />
         </ProfileSection>
 
       </div>
