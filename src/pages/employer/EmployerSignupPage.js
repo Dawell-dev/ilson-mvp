@@ -130,45 +130,106 @@ function EmployerSignupPage() {
 
     setLoading(true);
     setDiagError(null);
-    setDiagStep('1/4 Supabase Auth 계정 생성 요청 중...');
+    setDiagStep('1/4 계정 생성/확인 중...');
+
+    // 방안 A — signUp 5초 타임아웃 + signInWithPassword 폴백
+    // 신규 가입 / 유령 계정(auth만 있고 employers 없음) / 이미 완전 가입된 이메일
+    // 세 시나리오를 한 플로우로 처리.
+    const SIGN_UP_TIMEOUT_MS = 5000;
+    let authUserId = null;
+
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-      });
+      // Step A: signUp 시도 (타임아웃)
+      try {
+        const signUpRace = await Promise.race([
+          supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+          }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('SIGNUP_TIMEOUT')), SIGN_UP_TIMEOUT_MS)
+          ),
+        ]);
 
-      if (authError) {
-        setDiagError({
-          stage: 'signUp',
-          message: authError.message || '(없음)',
-          status: authError.status ?? '(없음)',
-          name: authError.name ?? '(없음)',
-        });
-        if (
-          authError.message?.toLowerCase().includes('already') ||
-          authError.message?.toLowerCase().includes('registered')
-        ) {
-          alert('이미 가입된 이메일이에요. 로그인해주세요.');
-          navigate('/employer/login');
+        if (signUpRace?.error) {
+          const msg = signUpRace.error.message?.toLowerCase() || '';
+          if (
+            msg.includes('already') ||
+            msg.includes('registered') ||
+            msg.includes('exists')
+          ) {
+            // 이미 가입된 이메일 → signIn 폴백으로 넘어감
+            setDiagStep('2/4 기존 계정 확인 — 로그인으로 전환...');
+          } else {
+            setDiagError({
+              stage: 'signUp',
+              message: signUpRace.error.message || '(없음)',
+              status: signUpRace.error.status ?? '(없음)',
+            });
+            alert('회원가입 오류: ' + signUpRace.error.message);
+            return;
+          }
         } else {
-          alert('회원가입 오류: ' + authError.message);
+          authUserId = signUpRace?.data?.user?.id || null;
+          if (authUserId) {
+            setDiagStep('2/4 계정 생성 성공');
+          }
         }
-        return;
+      } catch (e) {
+        if (e?.message === 'SIGNUP_TIMEOUT') {
+          setDiagStep('2/4 signUp 응답 지연 — 로그인으로 전환...');
+        } else {
+          setDiagError({
+            stage: 'signUpException',
+            message: e?.message || '(없음)',
+            name: e?.name || '(없음)',
+          });
+          alert('가입 시도 중 오류: ' + (e?.message || '알 수 없음'));
+          return;
+        }
       }
 
-      setDiagStep('2/4 Auth 응답 확인 중...');
-      const authUserId = authData?.user?.id;
+      // Step B: authUserId 없으면 signInWithPassword로 세션 확보
       if (!authUserId) {
-        setDiagError({
-          stage: 'authResponse',
-          message: '계정 생성 응답에 user.id가 없음',
-          dump: JSON.stringify(authData || {}, null, 2).slice(0, 400),
-        });
-        alert('계정 생성에 실패했어요. 다시 시도해주세요.');
-        return;
+        try {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+
+          if (signInError) {
+            setDiagError({
+              stage: 'signInFallback',
+              message: signInError.message || '(없음)',
+              status: signInError.status ?? '(없음)',
+            });
+            alert('로그인 확인 실패: ' + signInError.message);
+            return;
+          }
+
+          authUserId = signInData?.user?.id || null;
+          if (!authUserId) {
+            setDiagError({
+              stage: 'signInFallback',
+              message: '로그인 응답에 user.id 없음',
+            });
+            alert('계정 확인에 실패했어요. 다시 시도해주세요.');
+            return;
+          }
+
+          setDiagStep('2/4 로그인으로 세션 확보 완료');
+        } catch (e) {
+          setDiagError({
+            stage: 'signInException',
+            message: e?.message || '(없음)',
+          });
+          alert('로그인 폴백 예외: ' + (e?.message || '알 수 없음'));
+          return;
+        }
       }
 
-      setDiagStep('3/4 중복 가입 확인 중... (authUserId=' + authUserId.slice(0, 8) + '...)');
+      // Step C: employers 중복 확인
+      setDiagStep('3/4 기업 정보 확인 중...');
       const { data: existing, error: existingError } = await supabase
         .from('employers')
         .select('*')
@@ -188,14 +249,15 @@ function EmployerSignupPage() {
       }
 
       if (existing) {
+        // 이미 완전 가입된 계정 → 조용히 관리 페이지로
+        setDiagStep('✅ 기존 기업 계정 확인 — 이동 중');
         localStorage.setItem('employer', JSON.stringify(existing));
-        setDiagStep('✅ 이미 가입된 계정 — 관리 페이지로 이동');
-        alert('이미 가입된 기업 계정이 있어요.');
         navigate('/employer/manage');
         return;
       }
 
-      setDiagStep('4/4 employers 테이블에 저장 중...');
+      // Step D: employers insert (신규 / 유령 계정 구제)
+      setDiagStep('4/4 기업 정보 저장 중...');
       const { data, error } = await supabase
         .from('employers')
         .insert([
@@ -223,20 +285,20 @@ function EmployerSignupPage() {
         throw error;
       }
 
-      setDiagStep('✅ 가입 완료 — 관리 페이지로 이동');
+      // 성공 — 조용히 이동 (alert 제거, UX 매끄럽게)
+      setDiagStep('✅ 완료 — 이동 중');
       localStorage.setItem('employer', JSON.stringify(data[0]));
-      alert('가입이 완료됐어요!');
       navigate('/employer/manage');
     } catch (error) {
       if (!diagError) {
         setDiagError({
-          stage: 'exception',
-          message: error.message || '(없음)',
-          name: error.name || '(없음)',
-          stack: (error.stack || '').slice(0, 400),
+          stage: 'finalException',
+          message: error?.message || '(없음)',
+          name: error?.name || '(없음)',
+          stack: (error?.stack || '').slice(0, 400),
         });
       }
-      alert('가입 중 오류가 발생했습니다: ' + error.message);
+      alert('가입 중 오류가 발생했습니다: ' + (error?.message || '알 수 없음'));
     } finally {
       setLoading(false);
     }
