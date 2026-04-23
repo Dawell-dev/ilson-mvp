@@ -403,6 +403,8 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
           days: worker.available_times?.filter(t => ['월','화','수','목','금','토','일'].includes(t)) || [],
           times: worker.available_times?.filter(t => ['오전','오후','야간'].includes(t)) || [],
           jobs: worker.job_types || [],
+          driverLicense: worker.driver_license || 'none',
+          bio: worker.bio || '',
         }));
       }
     };
@@ -804,6 +806,8 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
       job_types: current.jobs,
       available_times: [...(current.days || []), ...(current.times || [])],
       kakao_id: kakaoId,
+      driver_license: current.driverLicense || 'none',
+      bio: current.bio || '',
     };
 
     try {
