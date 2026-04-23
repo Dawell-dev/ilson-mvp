@@ -1,9 +1,17 @@
 /**
- * 변경 요약 (2026-04-21, Phase A: 이력서 강화)
+ * 변경 요약
+ * ─ Phase A (2026-04-21): 이력서 강화 ─
  * - 마이페이지 → "내 이력서" 네이밍 전환 (헤더/하단 안내 문구)
  * - 자격증 섹션 신규 (추천 칩 + 바텀시트 모달, 만료없음 체크)
  * - 운전 가능 섹션 신규 (1종/2종/없음 단일 선택, 안내 문구)
- * - 자격증/운전은 이번엔 local state 유지 (DB 전환은 경력과 함께 추후)
+ *
+ * ─ Phase B (2026-04-22): 이력서 DB 영속화 ─
+ * - workers 테이블: driver_license, bio 컬럼 hydrate/save 연결
+ * - worker_careers 테이블 CRUD 연동 (경력 섹션)
+ * - worker_certifications 테이블 CRUD 연동 (자격증 섹션)
+ * - careers/certifications state를 MainScreen으로 hoisting하여 hydrate 지원
+ * - triggerSave가 workerId를 반환하여, 프로필 첫 저장 전에도 경력/자격증
+ *   추가 시 자동으로 worker 레코드 생성 후 insert
  */
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -351,6 +359,114 @@ function LocationScreen({ onGranted, onSkip }) {
   );
 }
 
+// ─── 이력서 DB 유틸 (MainScreen / ProfileView 공용) ───
+// workers 테이블의 driver_license / bio는 triggerSave payload에서 직접 처리.
+// 경력·자격증은 별도 테이블이므로 아래 유틸로 CRUD.
+const loadCareers = async (wId) => {
+  if (!wId) return [];
+  const { data, error } = await supabase
+    .from('worker_careers')
+    .select('*')
+    .eq('worker_id', wId)
+    .order('start_date', { ascending: false });
+  if (error) {
+    console.error('경력 로드 실패:', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    company: row.company,
+    role: row.role,
+    startDate: row.start_date || '',
+    endDate: row.end_date || '',
+  }));
+};
+
+const insertCareer = async (wId, career) => {
+  const { data, error } = await supabase
+    .from('worker_careers')
+    .insert([{
+      worker_id: wId,
+      company: career.company,
+      role: career.role,
+      start_date: career.startDate || null,
+      end_date: career.endDate || null,
+    }])
+    .select()
+    .single();
+  if (error) {
+    console.error('경력 저장 실패:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    company: data.company,
+    role: data.role,
+    startDate: data.start_date || '',
+    endDate: data.end_date || '',
+  };
+};
+
+const deleteCareer = async (id) => {
+  const { error } = await supabase
+    .from('worker_careers')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('경력 삭제 실패:', error);
+  return !error;
+};
+
+const loadCertifications = async (wId) => {
+  if (!wId) return [];
+  const { data, error } = await supabase
+    .from('worker_certifications')
+    .select('*')
+    .eq('worker_id', wId)
+    .order('issued_date', { ascending: false });
+  if (error) {
+    console.error('자격증 로드 실패:', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    name: row.name,
+    issuedDate: row.issued_date || '',
+    expiryDate: row.expires_date || '',
+  }));
+};
+
+const insertCertification = async (wId, cert) => {
+  const { data, error } = await supabase
+    .from('worker_certifications')
+    .insert([{
+      worker_id: wId,
+      name: cert.name,
+      issued_date: cert.issuedDate || null,
+      expires_date: cert.expiryDate || null,
+    }])
+    .select()
+    .single();
+  if (error) {
+    console.error('자격증 저장 실패:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    issuedDate: data.issued_date || '',
+    expiryDate: data.expires_date || '',
+  };
+};
+
+const deleteCertification = async (id) => {
+  const { error } = await supabase
+    .from('worker_certifications')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('자격증 삭제 실패:', error);
+  return !error;
+};
+
 // ─────────────────────────────────────
 // 3) 메인 화면
 // ─────────────────────────────────────
@@ -674,112 +790,6 @@ const DRIVER_LICENSES = [
   { key: 'type2', label: '2종 보통', hint: '🚗 승용차·소형 화물 운전 가능' },
   { key: 'none', label: '없음', hint: '도보 출퇴근만 가능해요' },
 ];
-
-// ─── 이력서 DB 유틸 ───
-const loadCareers = async (wId) => {
-  if (!wId) return [];
-  const { data, error } = await supabase
-    .from('worker_careers')
-    .select('*')
-    .eq('worker_id', wId)
-    .order('start_date', { ascending: false });
-  if (error) {
-    console.error('경력 로드 실패:', error);
-    return [];
-  }
-  return (data || []).map(row => ({
-    id: row.id,
-    company: row.company,
-    role: row.role,
-    startDate: row.start_date || '',
-    endDate: row.end_date || '',
-  }));
-};
-
-const insertCareer = async (wId, career) => {
-  const { data, error } = await supabase
-    .from('worker_careers')
-    .insert([{
-      worker_id: wId,
-      company: career.company,
-      role: career.role,
-      start_date: career.startDate || null,
-      end_date: career.endDate || null,
-    }])
-    .select()
-    .single();
-  if (error) {
-    console.error('경력 저장 실패:', error);
-    return null;
-  }
-  return {
-    id: data.id,
-    company: data.company,
-    role: data.role,
-    startDate: data.start_date || '',
-    endDate: data.end_date || '',
-  };
-};
-
-const deleteCareer = async (id) => {
-  const { error } = await supabase
-    .from('worker_careers')
-    .delete()
-    .eq('id', id);
-  if (error) console.error('경력 삭제 실패:', error);
-  return !error;
-};
-
-const loadCertifications = async (wId) => {
-  if (!wId) return [];
-  const { data, error } = await supabase
-    .from('worker_certifications')
-    .select('*')
-    .eq('worker_id', wId)
-    .order('issued_date', { ascending: false });
-  if (error) {
-    console.error('자격증 로드 실패:', error);
-    return [];
-  }
-  return (data || []).map(row => ({
-    id: row.id,
-    name: row.name,
-    issuedDate: row.issued_date || '',
-    expiryDate: row.expires_date || '',
-  }));
-};
-
-const insertCertification = async (wId, cert) => {
-  const { data, error } = await supabase
-    .from('worker_certifications')
-    .insert([{
-      worker_id: wId,
-      name: cert.name,
-      issued_date: cert.issuedDate || null,
-      expires_date: cert.expiryDate || null,
-    }])
-    .select()
-    .single();
-  if (error) {
-    console.error('자격증 저장 실패:', error);
-    return null;
-  }
-  return {
-    id: data.id,
-    name: data.name,
-    issuedDate: data.issued_date || '',
-    expiryDate: data.expires_date || '',
-  };
-};
-
-const deleteCertification = async (id) => {
-  const { error } = await supabase
-    .from('worker_certifications')
-    .delete()
-    .eq('id', id);
-  if (error) console.error('자격증 삭제 실패:', error);
-  return !error;
-};
 
 function ProfileCheckMark() {
   return (
