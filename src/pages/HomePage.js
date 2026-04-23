@@ -1,9 +1,17 @@
 /**
- * 변경 요약 (2026-04-21, Phase A: 이력서 강화)
+ * 변경 요약
+ * ─ Phase A (2026-04-21): 이력서 강화 ─
  * - 마이페이지 → "내 이력서" 네이밍 전환 (헤더/하단 안내 문구)
  * - 자격증 섹션 신규 (추천 칩 + 바텀시트 모달, 만료없음 체크)
  * - 운전 가능 섹션 신규 (1종/2종/없음 단일 선택, 안내 문구)
- * - 자격증/운전은 이번엔 local state 유지 (DB 전환은 경력과 함께 추후)
+ *
+ * ─ Phase B (2026-04-22): 이력서 DB 영속화 ─
+ * - workers 테이블: driver_license, bio 컬럼 hydrate/save 연결
+ * - worker_careers 테이블 CRUD 연동 (경력 섹션)
+ * - worker_certifications 테이블 CRUD 연동 (자격증 섹션)
+ * - careers/certifications state를 MainScreen으로 hoisting하여 hydrate 지원
+ * - triggerSave가 workerId를 반환하여, 프로필 첫 저장 전에도 경력/자격증
+ *   추가 시 자동으로 worker 레코드 생성 후 insert
  */
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -351,6 +359,114 @@ function LocationScreen({ onGranted, onSkip }) {
   );
 }
 
+// ─── 이력서 DB 유틸 (MainScreen / ProfileView 공용) ───
+// workers 테이블의 driver_license / bio는 triggerSave payload에서 직접 처리.
+// 경력·자격증은 별도 테이블이므로 아래 유틸로 CRUD.
+const loadCareers = async (wId) => {
+  if (!wId) return [];
+  const { data, error } = await supabase
+    .from('worker_careers')
+    .select('*')
+    .eq('worker_id', wId)
+    .order('start_date', { ascending: false });
+  if (error) {
+    console.error('경력 로드 실패:', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    company: row.company,
+    role: row.role,
+    startDate: row.start_date || '',
+    endDate: row.end_date || '',
+  }));
+};
+
+const insertCareer = async (wId, career) => {
+  const { data, error } = await supabase
+    .from('worker_careers')
+    .insert([{
+      worker_id: wId,
+      company: career.company,
+      role: career.role,
+      start_date: career.startDate || null,
+      end_date: career.endDate || null,
+    }])
+    .select()
+    .single();
+  if (error) {
+    console.error('경력 저장 실패:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    company: data.company,
+    role: data.role,
+    startDate: data.start_date || '',
+    endDate: data.end_date || '',
+  };
+};
+
+const deleteCareer = async (id) => {
+  const { error } = await supabase
+    .from('worker_careers')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('경력 삭제 실패:', error);
+  return !error;
+};
+
+const loadCertifications = async (wId) => {
+  if (!wId) return [];
+  const { data, error } = await supabase
+    .from('worker_certifications')
+    .select('*')
+    .eq('worker_id', wId)
+    .order('issued_date', { ascending: false });
+  if (error) {
+    console.error('자격증 로드 실패:', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    name: row.name,
+    issuedDate: row.issued_date || '',
+    expiryDate: row.expires_date || '',
+  }));
+};
+
+const insertCertification = async (wId, cert) => {
+  const { data, error } = await supabase
+    .from('worker_certifications')
+    .insert([{
+      worker_id: wId,
+      name: cert.name,
+      issued_date: cert.issuedDate || null,
+      expires_date: cert.expiryDate || null,
+    }])
+    .select()
+    .single();
+  if (error) {
+    console.error('자격증 저장 실패:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    issuedDate: data.issued_date || '',
+    expiryDate: data.expires_date || '',
+  };
+};
+
+const deleteCertification = async (id) => {
+  const { error } = await supabase
+    .from('worker_certifications')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('자격증 삭제 실패:', error);
+  return !error;
+};
+
 // ─────────────────────────────────────
 // 3) 메인 화면
 // ─────────────────────────────────────
@@ -371,6 +487,8 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
   });
   const [workerId, setWorkerId] = useState(null);
   const [kakaoId, setKakaoId] = useState(null);
+  const [careers, setCareers] = useState([]);
+  const [certifications, setCertifications] = useState([]);
 
   // 카카오 로그인 + workers 테이블 프로필 로드
   useEffect(() => {
@@ -403,7 +521,15 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
           days: worker.available_times?.filter(t => ['월','화','수','목','금','토','일'].includes(t)) || [],
           times: worker.available_times?.filter(t => ['오전','오후','야간'].includes(t)) || [],
           jobs: worker.job_types || [],
+          driverLicense: worker.driver_license || 'none',
+          bio: worker.bio || '',
         }));
+
+        const loadedCareers = await loadCareers(worker.id);
+        setCareers(loadedCareers);
+
+        const loadedCerts = await loadCertifications(worker.id);
+        setCertifications(loadedCerts);
       }
     };
 
@@ -496,7 +622,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
-{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} />}
+{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} careers={careers} setCareers={setCareers} certifications={certifications} setCertifications={setCertifications} />}
       </div>
 
       {/* 하단 탭 */}
@@ -684,7 +810,7 @@ function ProfileSection({ icon, iconBg, title, badge, children }) {
   );
 }
 
-function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId }) {
+function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId, careers, setCareers, certifications, setCertifications }) {
   const toggleArr = (key, val) => {
     setProfile(p => {
       const arr = p[key] || [];
@@ -695,7 +821,6 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     });
   };
 
-  const [careers, setCareers] = useState([]);
   const [showCareerForm, setShowCareerForm] = useState(false);
   const [newCareer, setNewCareer] = useState({ company: '', role: '', startDate: '', endDate: '' });
   const [isCurrentJob, setIsCurrentJob] = useState(false);
@@ -705,7 +830,6 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   const [endMonth, setEndMonth] = useState('');
 
   // 자격증
-  const [certifications, setCertifications] = useState([]);
   const [showCertForm, setShowCertForm] = useState(false);
   const [newCert, setNewCert] = useState({ name: '' });
   const [certYear, setCertYear] = useState('');
@@ -725,19 +849,39 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   };
   const closeCertForm = () => setShowCertForm(false);
   const canSubmitCert = newCert.name && certYear && certMonth;
-  const addCertification = () => {
+  const addCertification = async () => {
     if (!canSubmitCert) return;
+    let wId = workerId;
+    if (!wId) {
+      wId = await triggerSave();
+      if (!wId) {
+        alert('프로필 저장에 실패했어요. 다시 시도해주세요.');
+        return;
+      }
+    }
     const issued = `${certYear}.${String(certMonth).padStart(2, '0')}`;
     const expiry = certNoExpiry
       ? ''
       : certExpYear && certExpMonth ? `${certExpYear}.${String(certExpMonth).padStart(2, '0')}` : '';
-    setCertifications(prev => [...prev, { id: Date.now(), name: newCert.name, issuedDate: issued, expiryDate: expiry }]);
+    const saved = await insertCertification(wId, {
+      name: newCert.name,
+      issuedDate: issued,
+      expiryDate: expiry,
+    });
+    if (!saved) {
+      alert('자격증 저장에 실패했어요.');
+      return;
+    }
+    setCertifications(prev => [saved, ...prev]);
     closeCertForm();
-    triggerSave();
   };
-  const removeCertification = (id) => {
+  const removeCertification = async (id) => {
+    const ok = await deleteCertification(id);
+    if (!ok) {
+      alert('자격증 삭제에 실패했어요.');
+      return;
+    }
     setCertifications(prev => prev.filter(c => c.id !== id));
-    triggerSave();
   };
 
   const currentYear = new Date().getFullYear();
@@ -762,18 +906,39 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
   const canSubmitCareer = newCareer.company && newCareer.role && startYear && startMonth;
 
-  const addCareer = () => {
+  const addCareer = async () => {
     if (!canSubmitCareer) return;
+    let wId = workerId;
+    if (!wId) {
+      wId = await triggerSave();
+      if (!wId) {
+        alert('프로필 저장에 실패했어요. 다시 시도해주세요.');
+        return;
+      }
+    }
     const sd = `${startYear}.${String(startMonth).padStart(2, '0')}`;
     const ed = isCurrentJob ? '' : (endYear && endMonth ? `${endYear}.${String(endMonth).padStart(2, '0')}` : '');
-    setCareers(prev => [...prev, { company: newCareer.company, role: newCareer.role, startDate: sd, endDate: ed, id: Date.now() }]);
+    const saved = await insertCareer(wId, {
+      company: newCareer.company,
+      role: newCareer.role,
+      startDate: sd,
+      endDate: ed,
+    });
+    if (!saved) {
+      alert('경력 저장에 실패했어요.');
+      return;
+    }
+    setCareers(prev => [saved, ...prev]);
     closeCareerForm();
-    triggerSave();
   };
 
-  const removeCareer = (id) => {
+  const removeCareer = async (id) => {
+    const ok = await deleteCareer(id);
+    if (!ok) {
+      alert('경력 삭제에 실패했어요.');
+      return;
+    }
     setCareers(prev => prev.filter(c => c.id !== id));
-    triggerSave();
   };
 
   const calcDuration = (start, end) => {
@@ -795,7 +960,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     setTimeout(() => setToastVisible(false), 1800);
 
     // workers 테이블에 저장
-    if (!kakaoId) return;
+    if (!kakaoId) return null;
 
     const payload = {
       name: current.name,
@@ -804,18 +969,24 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
       job_types: current.jobs,
       available_times: [...(current.days || []), ...(current.times || [])],
       kakao_id: kakaoId,
+      driver_license: current.driverLicense || 'none',
+      bio: current.bio || '',
     };
 
     try {
       if (workerId) {
         await supabase.from('workers').update(payload).eq('id', workerId);
-      } else {
-        const { data } = await supabase.from('workers').insert([payload]).select().single();
-        if (data) setWorkerId(data.id);
+        return workerId;
+      }
+      const { data } = await supabase.from('workers').insert([payload]).select().single();
+      if (data) {
+        setWorkerId(data.id);
+        return data.id;
       }
     } catch (e) {
       console.error('프로필 저장 오류:', e);
     }
+    return null;
   };
 
   const selectStyle = {
@@ -1431,14 +1602,15 @@ export default function HomePage() {
 
   // 카카오 로그인 후 세션 확인
   useEffect(() => {
-    const timeout = setTimeout(() => setScreen('login'), 3000); // 3초 타임아웃
+    // 타임아웃은 느린 네트워크 방어용. 10초로 완화.
+    const timeout = setTimeout(() => setScreen('login'), 10000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeout);
       if (session) {
-        // ?tab= 파라미터가 있으면 이미 온보딩 완료된 사용자로 간주하고 바로 메인으로 이동
-        // (JobDetailPage에서 /?tab=profile 같은 딥링크로 들어오는 경우 처리)
-        setScreen(tabParam ? 'main' : 'location');
+        // 이미 로그인된 사용자 → 새로고침/재방문 시 바로 메인으로.
+        // LocationScreen은 onAuthStateChange('SIGNED_IN')에서 신규 로그인 직후에만 노출.
+        setScreen('main');
       } else {
         setScreen('login');
       }
@@ -1449,7 +1621,10 @@ export default function HomePage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // 신규 카카오 로그인 직후 1회만 위치 허용 화면 노출
         setScreen('location');
+      } else if (event === 'SIGNED_OUT') {
+        setScreen('login');
       }
     });
 
