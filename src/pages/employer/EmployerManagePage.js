@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Users, CheckCircle, XCircle, Phone, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, XCircle, Phone, MapPin, Clock, LogOut } from 'lucide-react';
 import { Button, Card, Loading } from '../../components/common';
 import { supabase } from '../../lib/supabase';
 
@@ -15,13 +15,42 @@ function EmployerManagePage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const savedEmployer = localStorage.getItem('employer');
-      if (!savedEmployer) {
-        navigate('/employer/post');
-        return;
+      // 1. 세션 우선 확인 (이메일/비밀번호 로그인)
+      const { data: { session } } = await supabase.auth.getSession();
+
+      let emp = null;
+      if (session?.user) {
+        // 세션 있음 → auth_user_id 기준 employers 조회
+        const { data: row } = await supabase
+          .from('employers')
+          .select('*')
+          .eq('auth_user_id', session.user.id)
+          .maybeSingle();
+
+        if (row) {
+          emp = row;
+          localStorage.setItem('employer', JSON.stringify(row));
+        } else {
+          // 세션은 있지만 기업 레코드 없음 → 가입 유도
+          navigate('/employer/signup');
+          return;
+        }
+      } else {
+        // 세션 없음 → localStorage fallback
+        const savedEmployer = localStorage.getItem('employer');
+        if (!savedEmployer) {
+          navigate('/employer/login');
+          return;
+        }
+        try {
+          emp = JSON.parse(savedEmployer);
+        } catch {
+          localStorage.removeItem('employer');
+          navigate('/employer/login');
+          return;
+        }
       }
 
-      const emp = JSON.parse(savedEmployer);
       setEmployer(emp);
 
       try {
@@ -41,6 +70,13 @@ function EmployerManagePage() {
     };
     loadData();
   }, [navigate]);
+
+  const handleLogout = async () => {
+    if (!window.confirm('로그아웃 하시겠어요?')) return;
+    await supabase.auth.signOut();
+    localStorage.removeItem('employer');
+    navigate('/employer/login');
+  };
 
   const refreshJobs = async () => {
     if (!employer) return;
@@ -161,16 +197,27 @@ function EmployerManagePage() {
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-2 text-gray-600"
+            aria-label="홈으로"
           >
             <ArrowLeft size={24} />
           </button>
           <h1 className="text-xl font-bold">공고 관리</h1>
-          <button
-            onClick={() => navigate('/employer/post')}
-            className="p-2 text-blue-600"
-          >
-            <Plus size={24} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate('/employer/post')}
+              className="p-2 text-blue-600"
+              aria-label="공고 등록"
+            >
+              <Plus size={24} />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-gray-500"
+              aria-label="로그아웃"
+            >
+              <LogOut size={22} />
+            </button>
+          </div>
         </div>
       </div>
 
