@@ -371,6 +371,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
   });
   const [workerId, setWorkerId] = useState(null);
   const [kakaoId, setKakaoId] = useState(null);
+  const [careers, setCareers] = useState([]);
 
   // 카카오 로그인 + workers 테이블 프로필 로드
   useEffect(() => {
@@ -406,6 +407,9 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
           driverLicense: worker.driver_license || 'none',
           bio: worker.bio || '',
         }));
+
+        const loadedCareers = await loadCareers(worker.id);
+        setCareers(loadedCareers);
       }
     };
 
@@ -498,7 +502,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
-{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} />}
+{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} careers={careers} setCareers={setCareers} />}
       </div>
 
       {/* 하단 탭 */}
@@ -667,6 +671,61 @@ const DRIVER_LICENSES = [
   { key: 'none', label: '없음', hint: '도보 출퇴근만 가능해요' },
 ];
 
+// ─── 이력서 DB 유틸 ───
+const loadCareers = async (wId) => {
+  if (!wId) return [];
+  const { data, error } = await supabase
+    .from('worker_careers')
+    .select('*')
+    .eq('worker_id', wId)
+    .order('start_date', { ascending: false });
+  if (error) {
+    console.error('경력 로드 실패:', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    company: row.company,
+    role: row.role,
+    startDate: row.start_date || '',
+    endDate: row.end_date || '',
+  }));
+};
+
+const insertCareer = async (wId, career) => {
+  const { data, error } = await supabase
+    .from('worker_careers')
+    .insert([{
+      worker_id: wId,
+      company: career.company,
+      role: career.role,
+      start_date: career.startDate || null,
+      end_date: career.endDate || null,
+    }])
+    .select()
+    .single();
+  if (error) {
+    console.error('경력 저장 실패:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    company: data.company,
+    role: data.role,
+    startDate: data.start_date || '',
+    endDate: data.end_date || '',
+  };
+};
+
+const deleteCareer = async (id) => {
+  const { error } = await supabase
+    .from('worker_careers')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('경력 삭제 실패:', error);
+  return !error;
+};
+
 function ProfileCheckMark() {
   return (
     <div style={{ width: 12, height: 8, borderLeft: '2px solid #fff', borderBottom: '2px solid #fff', transform: 'rotate(-45deg) translate(1px, -1px)' }} />
@@ -686,7 +745,7 @@ function ProfileSection({ icon, iconBg, title, badge, children }) {
   );
 }
 
-function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId }) {
+function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId, careers, setCareers }) {
   const toggleArr = (key, val) => {
     setProfile(p => {
       const arr = p[key] || [];
@@ -697,7 +756,6 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     });
   };
 
-  const [careers, setCareers] = useState([]);
   const [showCareerForm, setShowCareerForm] = useState(false);
   const [newCareer, setNewCareer] = useState({ company: '', role: '', startDate: '', endDate: '' });
   const [isCurrentJob, setIsCurrentJob] = useState(false);
@@ -764,18 +822,39 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
   const canSubmitCareer = newCareer.company && newCareer.role && startYear && startMonth;
 
-  const addCareer = () => {
+  const addCareer = async () => {
     if (!canSubmitCareer) return;
+    let wId = workerId;
+    if (!wId) {
+      wId = await triggerSave();
+      if (!wId) {
+        alert('프로필 저장에 실패했어요. 다시 시도해주세요.');
+        return;
+      }
+    }
     const sd = `${startYear}.${String(startMonth).padStart(2, '0')}`;
     const ed = isCurrentJob ? '' : (endYear && endMonth ? `${endYear}.${String(endMonth).padStart(2, '0')}` : '');
-    setCareers(prev => [...prev, { company: newCareer.company, role: newCareer.role, startDate: sd, endDate: ed, id: Date.now() }]);
+    const saved = await insertCareer(wId, {
+      company: newCareer.company,
+      role: newCareer.role,
+      startDate: sd,
+      endDate: ed,
+    });
+    if (!saved) {
+      alert('경력 저장에 실패했어요.');
+      return;
+    }
+    setCareers(prev => [saved, ...prev]);
     closeCareerForm();
-    triggerSave();
   };
 
-  const removeCareer = (id) => {
+  const removeCareer = async (id) => {
+    const ok = await deleteCareer(id);
+    if (!ok) {
+      alert('경력 삭제에 실패했어요.');
+      return;
+    }
     setCareers(prev => prev.filter(c => c.id !== id));
-    triggerSave();
   };
 
   const calcDuration = (start, end) => {
@@ -797,7 +876,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     setTimeout(() => setToastVisible(false), 1800);
 
     // workers 테이블에 저장
-    if (!kakaoId) return;
+    if (!kakaoId) return null;
 
     const payload = {
       name: current.name,
@@ -813,13 +892,17 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     try {
       if (workerId) {
         await supabase.from('workers').update(payload).eq('id', workerId);
-      } else {
-        const { data } = await supabase.from('workers').insert([payload]).select().single();
-        if (data) setWorkerId(data.id);
+        return workerId;
+      }
+      const { data } = await supabase.from('workers').insert([payload]).select().single();
+      if (data) {
+        setWorkerId(data.id);
+        return data.id;
       }
     } catch (e) {
       console.error('프로필 저장 오류:', e);
     }
+    return null;
   };
 
   const selectStyle = {
