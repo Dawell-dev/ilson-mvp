@@ -12,6 +12,12 @@
  * - careers/certifications state를 MainScreen으로 hoisting하여 hydrate 지원
  * - triggerSave가 workerId를 반환하여, 프로필 첫 저장 전에도 경력/자격증
  *   추가 시 자동으로 worker 레코드 생성 후 insert
+ *
+ * ─ Phase C (2026-04-23): 위치 변경 기능 ─
+ * - 위치바 클릭 시 LocationPickerModal 바텀시트 노출
+ * - Nominatim forward search로 한국 동·읍·면 검색 (debounce 400ms, 한국만)
+ * - "내 위치로 찾기" 버튼으로 GPS 재확인 가능
+ * - 검색/선택 시 region state 즉시 갱신
  */
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -86,7 +92,33 @@ function getFiltered(jobs, distance) {
   return jobs.filter((j) => j.dist <= max);
 }
 
-
+// Nominatim 결과 → 한국식 풀 주소 ("시/도 + 구/군 + 동/읍/면")
+// 예) "서울특별시 강남구 삼성동", "경기도 남양주시 화도읍"
+function extractFullAddress(item) {
+  const addr = item.address || {};
+  const level1 = addr.state || addr.province || addr.region || '';
+  const level2 =
+    addr.city_district ||
+    addr.borough ||
+    addr.county ||
+    (addr.city && addr.city !== level1 ? addr.city : '');
+  const level3 =
+    addr.suburb ||
+    addr.village ||
+    addr.town ||
+    addr.neighbourhood ||
+    addr.hamlet ||
+    '';
+  const parts = [level1, level2, level3].filter(p => p && p.trim());
+  const unique = [...new Set(parts)];
+  if (unique.length > 0) return unique.join(' ');
+  const tokens = (item.display_name || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .filter(t => t !== '대한민국' && t !== 'South Korea' && t !== 'Korea');
+  return tokens.reverse().join(' ') || '알 수 없는 주소';
+}
 
 
 // ─────────────────────────────────────
@@ -247,32 +279,32 @@ function LocationScreen({ onGranted, onSkip }) {
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
             );
             const data = await res.json();
-            const addr = data.address || {};
-            const name = addr.village || addr.town || addr.city_district || addr.county || addr.city || '내 동네';
+            // 풀 주소로 저장 (예: "경기도 남양주시 화도읍")
+            const name = extractFullAddress(data) || '내 동네';
             setRegionName(name);
             setLoading(false);
             setDone(true);
             setTimeout(() => onGranted(name), 800);
           } catch {
-            setRegionName('화도읍');
+            setRegionName('경기도 남양주시 화도읍');
             setLoading(false);
             setDone(true);
-            setTimeout(() => onGranted('화도읍'), 800);
+            setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
           }
         },
         () => {
-          setRegionName('화도읍');
+          setRegionName('경기도 남양주시 화도읍');
           setLoading(false);
           setDone(true);
-          setTimeout(() => onGranted('화도읍'), 800);
+          setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
         },
         { timeout: 8000 }
       );
     } else {
-      setRegionName('화도읍');
+      setRegionName('경기도 남양주시 화도읍');
       setLoading(false);
       setDone(true);
-      setTimeout(() => onGranted('화도읍'), 800);
+      setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
     }
   };
 
@@ -354,6 +386,241 @@ function LocationScreen({ onGranted, onSkip }) {
             </button>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────
+// Phase C) 위치 변경 바텀시트
+// ─────────────────────────────────────
+function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setQuery('');
+      setResults([]);
+      setError('');
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setError('');
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=ko&countrycodes=kr&limit=8&addressdetails=1`
+        );
+        const data = await res.json();
+        setResults(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error('위치 검색 실패:', e);
+        setError('검색 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.');
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const handleGpsClick = () => {
+    if (gpsLoading) return;
+    setGpsLoading(true);
+    setError('');
+
+    if (!navigator.geolocation) {
+      setGpsLoading(false);
+      setError('브라우저가 위치 정보를 지원하지 않아요.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
+          );
+          const data = await res.json();
+          const name = extractFullAddress(data) || '내 동네';
+          onSelect(name);
+          setGpsLoading(false);
+          onClose();
+        } catch {
+          setGpsLoading(false);
+          setError('위치를 가져오지 못했어요.');
+        }
+      },
+      (err) => {
+        setGpsLoading(false);
+        if (err.code === 1) {
+          setError('위치 권한이 거부됐어요. 브라우저 설정에서 허용해주세요.');
+        } else {
+          setError('위치 확인 시간이 초과됐어요.');
+        }
+      },
+      { timeout: 8000 }
+    );
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[300]">
+      <div
+        className="absolute inset-0 animate-overlay-in"
+        style={{ background: 'rgba(0,0,0,0.5)' }}
+        onClick={onClose}
+      />
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[28px] animate-slide-up-sheet flex flex-col"
+        style={{ maxHeight: '85vh' }}
+      >
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: '#DDD' }} />
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-3 flex-shrink-0">
+          <div className="text-[20px] font-extrabold" style={{ color: '#1A1A18' }}>위치 변경</div>
+          <button
+            className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+            style={{ background: '#F7F5F2' }}
+            onClick={onClose}
+          >
+            <span className="text-[18px]" style={{ color: '#888780' }}>✕</span>
+          </button>
+        </div>
+
+        <div className="px-6 pb-3 flex-shrink-0">
+          <div className="flex items-center gap-2 px-4 py-3.5 rounded-xl" style={{ background: '#F7F5F2', border: '1.5px solid #EDE8E2' }}>
+            <span className="text-[18px]">🔍</span>
+            <input
+              type="text"
+              placeholder="주소 또는 지역 검색 (예: 강남구, 화도읍)"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 bg-transparent outline-none text-[15px]"
+              style={{ color: '#1A1A18' }}
+              autoFocus
+            />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                className="w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                style={{ background: '#DDD8D1' }}
+              >
+                <span className="text-[11px]" style={{ color: '#fff' }}>✕</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="px-6 pb-2 flex-shrink-0">
+          <button
+            onClick={handleGpsClick}
+            disabled={gpsLoading}
+            className="w-full flex items-center gap-3 py-3.5 px-4 rounded-xl active:scale-[0.98] transition-transform"
+            style={{ background: '#FFF5F0', border: '1.5px solid #FDDCCC' }}
+          >
+            <span className="text-[20px]">📍</span>
+            <div className="flex-1 text-left">
+              <div className="text-[15px] font-bold" style={{ color: '#E85C1E' }}>
+                {gpsLoading ? '위치 확인 중...' : '내 위치로 찾기'}
+              </div>
+              <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>
+                GPS로 현재 위치 자동 설정
+              </div>
+            </div>
+            {gpsLoading && (
+              <div className="w-4 h-4 border-[2px] rounded-full animate-spin flex-shrink-0"
+                style={{ borderColor: 'rgba(232,92,30,0.2)', borderTopColor: '#E85C1E' }} />
+            )}
+          </button>
+        </div>
+
+        {error && (
+          <div className="px-6 pb-2 flex-shrink-0">
+            <div className="text-[13px] py-2 px-3 rounded-lg" style={{ background: '#FEE8E8', color: '#C62828' }}>
+              ⚠️ {error}
+            </div>
+          </div>
+        )}
+
+        {currentRegion && currentRegion !== '위치 미설정' && !query && (
+          <div className="px-6 pb-2 pt-1 flex-shrink-0">
+            <div className="text-[12px] font-medium mb-1.5" style={{ color: '#888780' }}>현재 위치</div>
+            <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg" style={{ background: '#F7F5F2' }}>
+              <span className="text-[14px]">📌</span>
+              <span className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>{currentRegion}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="px-6 pb-8 overflow-y-auto flex-1">
+          {loading && (
+            <div className="py-8 text-center">
+              <div className="inline-block w-5 h-5 border-[2px] rounded-full animate-spin"
+                style={{ borderColor: 'rgba(232,92,30,0.2)', borderTopColor: '#E85C1E' }} />
+              <div className="text-[13px] mt-2" style={{ color: '#888780' }}>검색 중...</div>
+            </div>
+          )}
+
+          {!loading && query && results.length === 0 && !error && (
+            <div className="py-8 text-center">
+              <div className="text-[32px] mb-2">🔍</div>
+              <div className="text-[14px]" style={{ color: '#888780' }}>
+                일치하는 주소가 없어요
+              </div>
+              <div className="text-[12px] mt-1" style={{ color: '#B4B2A9' }}>
+                지역명 또는 주소 일부로 다시 검색해보세요
+              </div>
+            </div>
+          )}
+
+          {!loading && results.length > 0 && (
+            <>
+              <div className="text-[12px] font-medium mt-2 mb-2" style={{ color: '#888780' }}>
+                검색 결과 {results.length}개
+              </div>
+              <div className="flex flex-col">
+                {results.map((item, idx) => {
+                  const fullAddress = extractFullAddress(item);
+                  return (
+                    <button
+                      key={item.place_id || idx}
+                      onClick={() => { onSelect(fullAddress); onClose(); }}
+                      className="flex items-center gap-3 py-3.5 px-2 text-left rounded-lg active:bg-[#FFF5F0] transition-colors"
+                      style={{ borderBottom: idx < results.length - 1 ? '1px solid #EDE8E2' : 'none' }}
+                    >
+                      <span className="text-[18px] flex-shrink-0">📍</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[15px] font-bold leading-snug" style={{ color: '#1A1A18' }}>
+                          {fullAddress}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-[11px] mt-3 text-center" style={{ color: '#B4B2A9' }}>
+                위치 정보: OpenStreetMap
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -474,6 +741,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
   const [currentDistance, setCurrentDistance] = useState('3km');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [favorites, setFavorites] = useState([]);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [profile, setProfile] = useState({
     name: '',
     phone: '',
@@ -600,15 +868,22 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
       {/* 위치 바 — 홈탭에서만 표시 */}
       {activeTab === 'home' && (
         <div className="px-5 py-2.5 flex items-center justify-between" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
-          <div className="flex items-center gap-2.5 cursor-pointer active:opacity-70 transition-opacity">
+          <button
+            className="flex items-center gap-2.5 cursor-pointer active:opacity-70 transition-opacity bg-transparent border-none p-0"
+            onClick={() => setShowLocationPicker(true)}
+          >
             <div className="w-[32px] h-[32px] rounded-full flex items-center justify-center" style={{ background: '#FFF5F0' }}>
               <span style={{ fontSize: '16px' }}>📍</span>
             </div>
-            <div>
-              <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>{region || '위치 미설정'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span></div>
-              <div className="text-[11px] font-medium mt-px" style={{ color: '#888780' }}>지금 내 위치에서 찾는 중</div>
+            <div className="text-left">
+              <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>
+                {region || '위치 미설정'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span>
+              </div>
+              <div className="text-[11px] font-medium mt-px" style={{ color: '#888780' }}>
+                {region && region !== '위치 미설정' ? '눌러서 위치 변경' : '눌러서 위치 설정'}
+              </div>
             </div>
-          </div>
+          </button>
           <div className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#E8F5E9', color: '#2E7D32' }}>
             실시간
           </div>
@@ -651,6 +926,14 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
           );
         })}
       </div>
+
+      {/* Phase C — 위치 변경 바텀시트 */}
+      <LocationPickerModal
+        isOpen={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        onSelect={(name) => setRegion(name)}
+        currentRegion={region}
+      />
     </div>
   );
 }
