@@ -18,30 +18,17 @@ const AuthCallback = () => {
         }
 
         if (session) {
-          // 로그인 성공 - 프로필 확인
+          // 카카오 OAuth는 구직자 전용. workers 테이블만 확인.
           const kakaoId = session.user.user_metadata?.provider_id;
 
-          // workers 테이블에서 확인
           const { data: worker } = await supabase
             .from('workers')
             .select('id')
             .eq('kakao_id', kakaoId)
-            .single();
+            .maybeSingle();
 
           if (worker) {
             navigate('/jobs');
-            return;
-          }
-
-          // employers 테이블에서 확인
-          const { data: employer } = await supabase
-            .from('employers')
-            .select('id')
-            .eq('kakao_id', kakaoId)
-            .single();
-
-          if (employer) {
-            navigate('/employer/manage');
             return;
           }
 

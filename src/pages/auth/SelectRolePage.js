@@ -49,7 +49,7 @@ const SelectRolePage = () => {
 
           {/* 구인처 */}
           <button
-            onClick={() => navigate('/employer/post')}
+            onClick={() => navigate('/employer/signup')}
             className="w-full bg-white p-6 rounded-xl shadow-sm border-2 border-transparent hover:border-green-500 transition-all text-left"
           >
             <div className="flex items-center gap-4">

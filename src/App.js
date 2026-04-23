@@ -17,6 +17,8 @@ import JobDetailPage from './pages/worker/JobDetailPage';
 import MyPage from './pages/worker/MyPage';
 
 // 기업용 페이지
+import EmployerSignupPage from './pages/employer/EmployerSignupPage';
+import EmployerLoginPage from './pages/employer/EmployerLoginPage';
 import EmployerPostPage from './pages/employer/EmployerPostPage';
 import EmployerManagePage from './pages/employer/EmployerManagePage';
 
@@ -45,6 +47,8 @@ function App() {
           <Route path="/my" element={<MyPage />} />
 
           {/* 기업 */}
+          <Route path="/employer/signup" element={<EmployerSignupPage />} />
+          <Route path="/employer/login" element={<EmployerLoginPage />} />
           <Route path="/employer/post" element={<EmployerPostPage />} />
           <Route path="/employer/manage" element={<EmployerManagePage />} />
 
