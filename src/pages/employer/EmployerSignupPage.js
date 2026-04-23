@@ -13,6 +13,9 @@ function EmployerSignupPage() {
   const [businessFile, setBusinessFile] = useState(null);
   const [businessFilePreview, setBusinessFilePreview] = useState(null);
   const fileInputRef = useRef(null);
+  // 🔧 진단 패치 — 가입이 어디서 막히는지 화면에 상시 노출
+  const [diagStep, setDiagStep] = useState('');
+  const [diagError, setDiagError] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -126,6 +129,8 @@ function EmployerSignupPage() {
     }
 
     setLoading(true);
+    setDiagError(null);
+    setDiagStep('1/4 Supabase Auth 계정 생성 요청 중...');
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -133,6 +138,12 @@ function EmployerSignupPage() {
       });
 
       if (authError) {
+        setDiagError({
+          stage: 'signUp',
+          message: authError.message || '(없음)',
+          status: authError.status ?? '(없음)',
+          name: authError.name ?? '(없음)',
+        });
         if (
           authError.message?.toLowerCase().includes('already') ||
           authError.message?.toLowerCase().includes('registered')
@@ -145,25 +156,46 @@ function EmployerSignupPage() {
         return;
       }
 
+      setDiagStep('2/4 Auth 응답 확인 중...');
       const authUserId = authData?.user?.id;
       if (!authUserId) {
+        setDiagError({
+          stage: 'authResponse',
+          message: '계정 생성 응답에 user.id가 없음',
+          dump: JSON.stringify(authData || {}, null, 2).slice(0, 400),
+        });
         alert('계정 생성에 실패했어요. 다시 시도해주세요.');
         return;
       }
 
-      const { data: existing } = await supabase
+      setDiagStep('3/4 중복 가입 확인 중... (authUserId=' + authUserId.slice(0, 8) + '...)');
+      const { data: existing, error: existingError } = await supabase
         .from('employers')
         .select('*')
         .eq('auth_user_id', authUserId)
         .maybeSingle();
 
+      if (existingError) {
+        setDiagError({
+          stage: 'checkDuplicate',
+          message: existingError.message || '(없음)',
+          code: existingError.code || '(없음)',
+          details: existingError.details || '(없음)',
+          hint: existingError.hint || '(없음)',
+        });
+        alert('중복 확인 중 오류: ' + existingError.message);
+        return;
+      }
+
       if (existing) {
         localStorage.setItem('employer', JSON.stringify(existing));
+        setDiagStep('✅ 이미 가입된 계정 — 관리 페이지로 이동');
         alert('이미 가입된 기업 계정이 있어요.');
         navigate('/employer/manage');
         return;
       }
 
+      setDiagStep('4/4 employers 테이블에 저장 중...');
       const { data, error } = await supabase
         .from('employers')
         .insert([
@@ -180,12 +212,30 @@ function EmployerSignupPage() {
         ])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        setDiagError({
+          stage: 'insertEmployers',
+          message: error.message || '(없음)',
+          code: error.code || '(없음)',
+          details: error.details || '(없음)',
+          hint: error.hint || '(없음)',
+        });
+        throw error;
+      }
 
+      setDiagStep('✅ 가입 완료 — 관리 페이지로 이동');
       localStorage.setItem('employer', JSON.stringify(data[0]));
       alert('가입이 완료됐어요!');
       navigate('/employer/manage');
     } catch (error) {
+      if (!diagError) {
+        setDiagError({
+          stage: 'exception',
+          message: error.message || '(없음)',
+          name: error.name || '(없음)',
+          stack: (error.stack || '').slice(0, 400),
+        });
+      }
       alert('가입 중 오류가 발생했습니다: ' + error.message);
     } finally {
       setLoading(false);
@@ -433,6 +483,56 @@ function EmployerSignupPage() {
               로그인
             </button>
           </p>
+
+          {/* 🔧 진단 패널 — 가입 실패 원인 추적용. 해결 후 제거 예정 */}
+          {(diagStep || diagError) && (
+            <div className="mt-4 p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
+              <div className="text-sm font-bold text-blue-700 mb-2">🔍 진단</div>
+              {diagStep && (
+                <div className="text-sm text-blue-700 mb-2 break-all">
+                  <span className="font-medium">현재 단계: </span>
+                  {diagStep}
+                </div>
+              )}
+              {diagError && (
+                <div className="text-xs text-red-700 bg-red-50 rounded-lg p-2 mt-2 space-y-1 break-all">
+                  <div>
+                    <span className="font-bold">❌ stage:</span> {diagError.stage}
+                  </div>
+                  <div>
+                    <span className="font-bold">message:</span> {diagError.message}
+                  </div>
+                  {diagError.code && (
+                    <div>
+                      <span className="font-bold">code:</span> {diagError.code}
+                    </div>
+                  )}
+                  {diagError.status !== undefined && (
+                    <div>
+                      <span className="font-bold">status:</span> {diagError.status}
+                    </div>
+                  )}
+                  {diagError.hint && (
+                    <div>
+                      <span className="font-bold">hint:</span> {diagError.hint}
+                    </div>
+                  )}
+                  {diagError.details && (
+                    <div>
+                      <span className="font-bold">details:</span> {diagError.details}
+                    </div>
+                  )}
+                  {diagError.dump && (
+                    <div className="whitespace-pre-wrap mt-1">
+                      <span className="font-bold">dump:</span>
+                      <br />
+                      {diagError.dump}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
