@@ -782,8 +782,8 @@ function JobCard({ job, index, isFav, toggleFav }) {
 // ─── 마이페이지 ───
 const PROFILE_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const PROFILE_TIMES = ['오전', '오후', '야간'];
-const PROFILE_JOBS = ['아파트 경비', '상가·건물 청소', '조경', '주차 관리', '택배·물류 분류'];
-const PROFILE_DISTS = ['500m', '1km', '3km', '무관'];
+const PROFILE_JOBS = ['아파트 경비', '상가·건물 청소'];
+const PROFILE_DISTS = ['500m', '1km', '2km', '3km', '5km', '10km', '20km', '무관'];
 const CERT_SUGGESTIONS = ['경비원 신임교육', '건물관리사', '조경기능사', '전기기능사', '지게차운전기능사'];
 const DRIVER_LICENSES = [
   { key: 'type1', label: '1종 보통', hint: '🚛 대형 차량·트럭 운전 가능' },
@@ -1099,26 +1099,18 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
           </div>
           <div>
             <div className="text-[13px] mb-2" style={{ color: '#888780' }}>이동 가능 거리</div>
-            <div className="flex gap-1.5">
-              {PROFILE_DISTS.map(d => {
-                const on = profile.distance === d;
-                return (
-                  <button key={d} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[13px]"
-                    style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: on ? '#1A1A18' : '#888780', fontWeight: on ? 500 : 400 }}
-                    onClick={() => setProfile(p => {
-                      const next = { ...p, distance: d };
-                      triggerSave(next);
-                      return next;
-                    })}
-                  >
-                    <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#fff', border: '1.5px solid #EDE8E2' }}
-                    >{on && <span className="w-1.5 h-1.5 rounded-full bg-white" />}</span>
-                    {d}
-                  </button>
-                );
+            <select
+              value={profile.distance || ''}
+              onChange={(e) => setProfile(p => {
+                const next = { ...p, distance: e.target.value };
+                triggerSave(next);
+                return next;
               })}
-            </div>
+              className="w-full px-4 py-3 rounded-lg text-[15px] outline-none"
+              style={selectStyle}
+            >
+              {PROFILE_DISTS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
           </div>
         </ProfileSection>
 
