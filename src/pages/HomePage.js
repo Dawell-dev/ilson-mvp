@@ -372,6 +372,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
   const [workerId, setWorkerId] = useState(null);
   const [kakaoId, setKakaoId] = useState(null);
   const [careers, setCareers] = useState([]);
+  const [certifications, setCertifications] = useState([]);
 
   // 카카오 로그인 + workers 테이블 프로필 로드
   useEffect(() => {
@@ -410,6 +411,9 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
 
         const loadedCareers = await loadCareers(worker.id);
         setCareers(loadedCareers);
+
+        const loadedCerts = await loadCertifications(worker.id);
+        setCertifications(loadedCerts);
       }
     };
 
@@ -502,7 +506,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
-{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} careers={careers} setCareers={setCareers} />}
+{activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} careers={careers} setCareers={setCareers} certifications={certifications} setCertifications={setCertifications} />}
       </div>
 
       {/* 하단 탭 */}
@@ -726,6 +730,57 @@ const deleteCareer = async (id) => {
   return !error;
 };
 
+const loadCertifications = async (wId) => {
+  if (!wId) return [];
+  const { data, error } = await supabase
+    .from('worker_certifications')
+    .select('*')
+    .eq('worker_id', wId)
+    .order('issued_date', { ascending: false });
+  if (error) {
+    console.error('자격증 로드 실패:', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    name: row.name,
+    issuedDate: row.issued_date || '',
+    expiryDate: row.expires_date || '',
+  }));
+};
+
+const insertCertification = async (wId, cert) => {
+  const { data, error } = await supabase
+    .from('worker_certifications')
+    .insert([{
+      worker_id: wId,
+      name: cert.name,
+      issued_date: cert.issuedDate || null,
+      expires_date: cert.expiryDate || null,
+    }])
+    .select()
+    .single();
+  if (error) {
+    console.error('자격증 저장 실패:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    issuedDate: data.issued_date || '',
+    expiryDate: data.expires_date || '',
+  };
+};
+
+const deleteCertification = async (id) => {
+  const { error } = await supabase
+    .from('worker_certifications')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('자격증 삭제 실패:', error);
+  return !error;
+};
+
 function ProfileCheckMark() {
   return (
     <div style={{ width: 12, height: 8, borderLeft: '2px solid #fff', borderBottom: '2px solid #fff', transform: 'rotate(-45deg) translate(1px, -1px)' }} />
@@ -745,7 +800,7 @@ function ProfileSection({ icon, iconBg, title, badge, children }) {
   );
 }
 
-function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId, careers, setCareers }) {
+function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId, careers, setCareers, certifications, setCertifications }) {
   const toggleArr = (key, val) => {
     setProfile(p => {
       const arr = p[key] || [];
@@ -765,7 +820,6 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   const [endMonth, setEndMonth] = useState('');
 
   // 자격증
-  const [certifications, setCertifications] = useState([]);
   const [showCertForm, setShowCertForm] = useState(false);
   const [newCert, setNewCert] = useState({ name: '' });
   const [certYear, setCertYear] = useState('');
@@ -785,19 +839,39 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   };
   const closeCertForm = () => setShowCertForm(false);
   const canSubmitCert = newCert.name && certYear && certMonth;
-  const addCertification = () => {
+  const addCertification = async () => {
     if (!canSubmitCert) return;
+    let wId = workerId;
+    if (!wId) {
+      wId = await triggerSave();
+      if (!wId) {
+        alert('프로필 저장에 실패했어요. 다시 시도해주세요.');
+        return;
+      }
+    }
     const issued = `${certYear}.${String(certMonth).padStart(2, '0')}`;
     const expiry = certNoExpiry
       ? ''
       : certExpYear && certExpMonth ? `${certExpYear}.${String(certExpMonth).padStart(2, '0')}` : '';
-    setCertifications(prev => [...prev, { id: Date.now(), name: newCert.name, issuedDate: issued, expiryDate: expiry }]);
+    const saved = await insertCertification(wId, {
+      name: newCert.name,
+      issuedDate: issued,
+      expiryDate: expiry,
+    });
+    if (!saved) {
+      alert('자격증 저장에 실패했어요.');
+      return;
+    }
+    setCertifications(prev => [saved, ...prev]);
     closeCertForm();
-    triggerSave();
   };
-  const removeCertification = (id) => {
+  const removeCertification = async (id) => {
+    const ok = await deleteCertification(id);
+    if (!ok) {
+      alert('자격증 삭제에 실패했어요.');
+      return;
+    }
     setCertifications(prev => prev.filter(c => c.id !== id));
-    triggerSave();
   };
 
   const currentYear = new Date().getFullYear();
