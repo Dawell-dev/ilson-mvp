@@ -1602,14 +1602,15 @@ export default function HomePage() {
 
   // 카카오 로그인 후 세션 확인
   useEffect(() => {
-    const timeout = setTimeout(() => setScreen('login'), 3000); // 3초 타임아웃
+    // 타임아웃은 느린 네트워크 방어용. 10초로 완화.
+    const timeout = setTimeout(() => setScreen('login'), 10000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeout);
       if (session) {
-        // ?tab= 파라미터가 있으면 이미 온보딩 완료된 사용자로 간주하고 바로 메인으로 이동
-        // (JobDetailPage에서 /?tab=profile 같은 딥링크로 들어오는 경우 처리)
-        setScreen(tabParam ? 'main' : 'location');
+        // 이미 로그인된 사용자 → 새로고침/재방문 시 바로 메인으로.
+        // LocationScreen은 onAuthStateChange('SIGNED_IN')에서 신규 로그인 직후에만 노출.
+        setScreen('main');
       } else {
         setScreen('login');
       }
@@ -1620,7 +1621,10 @@ export default function HomePage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // 신규 카카오 로그인 직후 1회만 위치 허용 화면 노출
         setScreen('location');
+      } else if (event === 'SIGNED_OUT') {
+        setScreen('login');
       }
     });
 
