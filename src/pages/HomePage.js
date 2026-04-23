@@ -92,16 +92,24 @@ function getFiltered(jobs, distance) {
   return jobs.filter((j) => j.dist <= max);
 }
 
-// Nominatim 결과 → 한국식 풀 주소 ("시/도 + 구/군 + 동/읍/면")
+// 🆕 Nominatim 결과 → 한국식 풀 주소 ("시/도 + 구/군 + 동/읍/면")
 // 예) "서울특별시 강남구 삼성동", "경기도 남양주시 화도읍"
 function extractFullAddress(item) {
   const addr = item.address || {};
+
+  // 1단계: 시/도
   const level1 = addr.state || addr.province || addr.region || '';
+
+  // 2단계: 시/군/구
+  //  - 서울/광역시: state=서울특별시, city_district=강남구
+  //  - 경기도 등: state=경기도, city=수원시 또는 county=남양주시
   const level2 =
     addr.city_district ||
     addr.borough ||
     addr.county ||
     (addr.city && addr.city !== level1 ? addr.city : '');
+
+  // 3단계: 동/읍/면
   const level3 =
     addr.suburb ||
     addr.village ||
@@ -109,9 +117,14 @@ function extractFullAddress(item) {
     addr.neighbourhood ||
     addr.hamlet ||
     '';
+
+  // 조합 후 중복 제거 (같은 값이 여러 단계에 들어간 경우 대비)
   const parts = [level1, level2, level3].filter(p => p && p.trim());
   const unique = [...new Set(parts)];
+
   if (unique.length > 0) return unique.join(' ');
+
+  // fallback: display_name 역순 조립 (한국 주소는 일반적으로 "동, 구, 시, 대한민국" 순서)
   const tokens = (item.display_name || '')
     .split(',')
     .map(s => s.trim())
@@ -119,6 +132,8 @@ function extractFullAddress(item) {
     .filter(t => t !== '대한민국' && t !== 'South Korea' && t !== 'Korea');
   return tokens.reverse().join(' ') || '알 수 없는 주소';
 }
+
+
 
 
 // ─────────────────────────────────────
@@ -279,7 +294,7 @@ function LocationScreen({ onGranted, onSkip }) {
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
             );
             const data = await res.json();
-            // 풀 주소로 저장 (예: "경기도 남양주시 화도읍")
+            // 🆕 풀 주소로 저장 (예: "경기도 남양주시 화도읍")
             const name = extractFullAddress(data) || '내 동네';
             setRegionName(name);
             setLoading(false);
@@ -392,7 +407,7 @@ function LocationScreen({ onGranted, onSkip }) {
 }
 
 // ─────────────────────────────────────
-// Phase C) 위치 변경 바텀시트
+// 🆕 위치 변경 바텀시트 (Phase C)
 // ─────────────────────────────────────
 function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
   const [query, setQuery] = useState('');
@@ -401,6 +416,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 모달 열릴 때마다 상태 초기화
   useEffect(() => {
     if (isOpen) {
       setQuery('');
@@ -409,6 +425,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
     }
   }, [isOpen]);
 
+  // debounced Nominatim forward search (한국만)
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
@@ -431,7 +448,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
       } finally {
         setLoading(false);
       }
-    }, 400);
+    }, 400); // Nominatim rate limit 대응
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -455,6 +472,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
           );
           const data = await res.json();
+          // 🆕 풀 주소로 저장
           const name = extractFullAddress(data) || '내 동네';
           onSelect(name);
           setGpsLoading(false);
@@ -480,98 +498,102 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
 
   return (
     <div className="fixed inset-0 z-[300]">
+      {/* 오버레이 */}
       <div
         className="absolute inset-0 animate-overlay-in"
         style={{ background: 'rgba(0,0,0,0.5)' }}
         onClick={onClose}
       />
+      {/* 시트 */}
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[28px] animate-slide-up-sheet flex flex-col"
-        style={{ maxHeight: '85vh' }}
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[24px] animate-slide-up-sheet flex flex-col"
+        style={{ maxHeight: '92vh', height: '92vh' }}
       >
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: '#DDD' }} />
+        {/* 드래그 핸들 */}
+        <div className="flex justify-center pt-2 pb-0.5 flex-shrink-0">
+          <div className="w-9 h-1 rounded-full" style={{ background: '#DDD' }} />
         </div>
 
-        <div className="flex items-center justify-between px-6 py-3 flex-shrink-0">
-          <div className="text-[20px] font-extrabold" style={{ color: '#1A1A18' }}>위치 변경</div>
+        {/* 헤더 (컴팩트) */}
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0">
+          <div className="text-[17px] font-extrabold" style={{ color: '#1A1A18' }}>위치 변경</div>
           <button
-            className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+            className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
             style={{ background: '#F7F5F2' }}
             onClick={onClose}
           >
-            <span className="text-[18px]" style={{ color: '#888780' }}>✕</span>
+            <span className="text-[15px]" style={{ color: '#888780' }}>✕</span>
           </button>
         </div>
 
-        <div className="px-6 pb-3 flex-shrink-0">
-          <div className="flex items-center gap-2 px-4 py-3.5 rounded-xl" style={{ background: '#F7F5F2', border: '1.5px solid #EDE8E2' }}>
-            <span className="text-[18px]">🔍</span>
+        {/* 검색창 (컴팩트) */}
+        <div className="px-5 pb-2 flex-shrink-0">
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl" style={{ background: '#F7F5F2', border: '1.5px solid #EDE8E2' }}>
+            <span className="text-[16px]">🔍</span>
             <input
               type="text"
-              placeholder="주소 또는 지역 검색 (예: 강남구, 화도읍)"
+              placeholder="주소 또는 지역 검색 (예: 강남구)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-[15px]"
+              className="flex-1 bg-transparent outline-none text-[14px]"
               style={{ color: '#1A1A18' }}
               autoFocus
             />
             {query && (
               <button
                 onClick={() => setQuery('')}
-                className="w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                className="w-5 h-5 rounded-full flex items-center justify-center active:scale-90 transition-transform"
                 style={{ background: '#DDD8D1' }}
               >
-                <span className="text-[11px]" style={{ color: '#fff' }}>✕</span>
+                <span className="text-[10px]" style={{ color: '#fff' }}>✕</span>
               </button>
             )}
           </div>
         </div>
 
-        <div className="px-6 pb-2 flex-shrink-0">
+        {/* 내 위치로 찾기 (한 줄 컴팩트) */}
+        <div className="px-5 pb-1.5 flex-shrink-0">
           <button
             onClick={handleGpsClick}
             disabled={gpsLoading}
-            className="w-full flex items-center gap-3 py-3.5 px-4 rounded-xl active:scale-[0.98] transition-transform"
+            className="w-full flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl active:scale-[0.98] transition-transform"
             style={{ background: '#FFF5F0', border: '1.5px solid #FDDCCC' }}
           >
-            <span className="text-[20px]">📍</span>
-            <div className="flex-1 text-left">
-              <div className="text-[15px] font-bold" style={{ color: '#E85C1E' }}>
-                {gpsLoading ? '위치 확인 중...' : '내 위치로 찾기'}
-              </div>
-              <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>
-                GPS로 현재 위치 자동 설정
-              </div>
-            </div>
+            <span className="text-[16px]">📍</span>
+            <span className="flex-1 text-left text-[14px] font-bold" style={{ color: '#E85C1E' }}>
+              {gpsLoading ? '위치 확인 중...' : '내 위치로 찾기 (GPS)'}
+            </span>
             {gpsLoading && (
-              <div className="w-4 h-4 border-[2px] rounded-full animate-spin flex-shrink-0"
+              <div className="w-3.5 h-3.5 border-[2px] rounded-full animate-spin flex-shrink-0"
                 style={{ borderColor: 'rgba(232,92,30,0.2)', borderTopColor: '#E85C1E' }} />
             )}
           </button>
         </div>
 
+        {/* 에러 메시지 */}
         {error && (
-          <div className="px-6 pb-2 flex-shrink-0">
-            <div className="text-[13px] py-2 px-3 rounded-lg" style={{ background: '#FEE8E8', color: '#C62828' }}>
+          <div className="px-5 pb-1.5 flex-shrink-0">
+            <div className="text-[12px] py-1.5 px-2.5 rounded-lg" style={{ background: '#FEE8E8', color: '#C62828' }}>
               ⚠️ {error}
             </div>
           </div>
         )}
 
+        {/* 현재 위치 (한 줄로 축소) */}
         {currentRegion && currentRegion !== '위치 미설정' && !query && (
-          <div className="px-6 pb-2 pt-1 flex-shrink-0">
-            <div className="text-[12px] font-medium mb-1.5" style={{ color: '#888780' }}>현재 위치</div>
-            <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg" style={{ background: '#F7F5F2' }}>
-              <span className="text-[14px]">📌</span>
-              <span className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>{currentRegion}</span>
+          <div className="px-5 pb-1.5 flex-shrink-0">
+            <div className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg" style={{ background: '#F7F5F2' }}>
+              <span className="text-[12px] flex-shrink-0" style={{ color: '#888780' }}>현재</span>
+              <span className="text-[12px]">📌</span>
+              <span className="text-[13px] font-medium truncate" style={{ color: '#1A1A18' }}>{currentRegion}</span>
             </div>
           </div>
         )}
 
-        <div className="px-6 pb-8 overflow-y-auto flex-1">
+        {/* 결과 (스크롤 영역) */}
+        <div className="px-5 pb-6 overflow-y-auto flex-1">
           {loading && (
-            <div className="py-8 text-center">
+            <div className="py-6 text-center">
               <div className="inline-block w-5 h-5 border-[2px] rounded-full animate-spin"
                 style={{ borderColor: 'rgba(232,92,30,0.2)', borderTopColor: '#E85C1E' }} />
               <div className="text-[13px] mt-2" style={{ color: '#888780' }}>검색 중...</div>
@@ -579,8 +601,8 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
           )}
 
           {!loading && query && results.length === 0 && !error && (
-            <div className="py-8 text-center">
-              <div className="text-[32px] mb-2">🔍</div>
+            <div className="py-6 text-center">
+              <div className="text-[28px] mb-1.5">🔍</div>
               <div className="text-[14px]" style={{ color: '#888780' }}>
                 일치하는 주소가 없어요
               </div>
@@ -592,7 +614,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
 
           {!loading && results.length > 0 && (
             <>
-              <div className="text-[12px] font-medium mt-2 mb-2" style={{ color: '#888780' }}>
+              <div className="text-[11px] font-medium mt-1 mb-1" style={{ color: '#888780' }}>
                 검색 결과 {results.length}개
               </div>
               <div className="flex flex-col">
@@ -602,12 +624,12 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
                     <button
                       key={item.place_id || idx}
                       onClick={() => { onSelect(fullAddress); onClose(); }}
-                      className="flex items-center gap-3 py-3.5 px-2 text-left rounded-lg active:bg-[#FFF5F0] transition-colors"
+                      className="flex items-center gap-2.5 py-2.5 px-2 text-left rounded-lg active:bg-[#FFF5F0] transition-colors"
                       style={{ borderBottom: idx < results.length - 1 ? '1px solid #EDE8E2' : 'none' }}
                     >
-                      <span className="text-[18px] flex-shrink-0">📍</span>
+                      <span className="text-[16px] flex-shrink-0">📍</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[15px] font-bold leading-snug" style={{ color: '#1A1A18' }}>
+                        <div className="text-[14px] font-bold leading-snug" style={{ color: '#1A1A18' }}>
                           {fullAddress}
                         </div>
                       </div>
@@ -741,7 +763,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
   const [currentDistance, setCurrentDistance] = useState('3km');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [favorites, setFavorites] = useState([]);
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false); // 🆕 위치 변경 모달
   const [profile, setProfile] = useState({
     name: '',
     phone: '',
@@ -868,6 +890,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
       {/* 위치 바 — 홈탭에서만 표시 */}
       {activeTab === 'home' && (
         <div className="px-5 py-2.5 flex items-center justify-between" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
+          {/* 🆕 onClick으로 위치 변경 모달 오픈 */}
           <button
             className="flex items-center gap-2.5 cursor-pointer active:opacity-70 transition-opacity bg-transparent border-none p-0"
             onClick={() => setShowLocationPicker(true)}
@@ -927,7 +950,7 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
         })}
       </div>
 
-      {/* Phase C — 위치 변경 바텀시트 */}
+      {/* 🆕 위치 변경 바텀시트 */}
       <LocationPickerModal
         isOpen={showLocationPicker}
         onClose={() => setShowLocationPicker(false)}
