@@ -164,8 +164,31 @@ function EmployerPostPage() {
       return;
     }
 
+    // 현재 카카오 세션 확인
+    const { data: { session } } = await supabase.auth.getSession();
+    const kakaoId = session?.user?.user_metadata?.provider_id;
+
+    if (!kakaoId) {
+      alert('카카오 로그인이 필요해요. 다시 로그인해주세요.');
+      navigate('/');
+      return;
+    }
+
     setLoading(true);
     try {
+      // 중복 가입 방어 — 같은 kakao_id로 이미 등록된 기업이 있는지 확인
+      const { data: existing } = await supabase
+        .from('employers')
+        .select('id')
+        .eq('kakao_id', kakaoId)
+        .maybeSingle();
+
+      if (existing) {
+        alert('이미 가입된 기업 계정이 있어요.');
+        navigate('/employer/manage');
+        return;
+      }
+
       const { data, error } = await supabase.from('employers').insert([
         {
           company_name: formData.companyName,
@@ -175,6 +198,7 @@ function EmployerPostPage() {
           business_number: formData.businessNumber.replace(/[^0-9]/g, ''),
           ceo_name: formData.ceoName,
           verified: true,
+          kakao_id: kakaoId,
         },
       ]).select();
 
