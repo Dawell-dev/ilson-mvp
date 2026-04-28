@@ -1,8 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Users, CheckCircle, XCircle, Phone, MapPin, Clock, LogOut } from 'lucide-react';
+import { Plus, Users, CheckCircle, XCircle, Phone, MapPin, Clock, LogOut, Briefcase, UserPlus, PhoneCall, FileText } from 'lucide-react';
 import { Button, Card, Loading } from '../../components/common';
 import { supabase } from '../../lib/supabase';
+
+// 통계 카드 헬퍼
+function StatCard({ icon: Icon, iconBg, iconColor, label, value, unit }) {
+  return (
+    <div
+      className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+    >
+      <div className="flex items-center gap-3 mb-2">
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: iconBg }}
+        >
+          <Icon size={20} style={{ color: iconColor }} />
+        </div>
+        <div className="text-sm text-gray-500 font-medium">{label}</div>
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className="text-3xl font-bold" style={{ color: iconColor }}>
+          {value}
+        </span>
+        <span className="text-sm font-medium text-gray-400">{unit}</span>
+      </div>
+    </div>
+  );
+}
 
 function EmployerManagePage() {
   const navigate = useNavigate();
@@ -134,7 +159,6 @@ function EmployerManagePage() {
 
       if (error) throw error;
 
-      // 목록 새로고침
       if (selectedJob) {
         loadApplications(selectedJob);
       }
@@ -183,173 +207,219 @@ function EmployerManagePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F5F2' }}>
         <Loading />
       </div>
     );
   }
 
+  // 통계 (현재는 jobs.length만 실제 값. 나머지는 0 하드코딩)
+  const openJobsCount = jobs.filter((j) => j.status === 'open').length;
+  const newApplicantsCount = 0; // TODO: applications 테이블 연동 시 채우기
+  const pendingContactCount = 0; // TODO: 동일
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
-      {/* 헤더 */}
-      <div className="bg-white px-4 py-4 border-b border-gray-200 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen pb-12" style={{ background: '#F7F5F2' }}>
+      <div className="max-w-3xl mx-auto px-4 md:px-6">
+        {/* (A) 환영 섹션 */}
+        <div className="flex items-start justify-between gap-3 py-6 md:py-8">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
+              안녕하세요, {employer?.company_name} 담당자님 👋
+            </h1>
+            <p className="text-sm md:text-base text-gray-500 mt-2">
+              오늘도 좋은 인재를 만나보세요
+            </p>
+          </div>
           <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600"
-            aria-label="홈으로"
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 active:scale-95 transition-all flex-shrink-0"
+            aria-label="로그아웃"
           >
-            <ArrowLeft size={24} />
+            <LogOut size={16} />
+            <span className="text-sm font-medium hidden sm:inline">로그아웃</span>
           </button>
-          <h1 className="text-xl font-bold">공고 관리</h1>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => navigate('/employer/post')}
-              className="p-2 text-blue-600"
-              aria-label="공고 등록"
-            >
-              <Plus size={24} />
-            </button>
-            <button
-              onClick={handleLogout}
-              className="p-2 text-gray-500"
-              aria-label="로그아웃"
-            >
-              <LogOut size={22} />
-            </button>
-          </div>
         </div>
-      </div>
 
-      {/* 기업 정보 */}
-      <div className="bg-blue-600 text-white px-6 py-4">
-        <p className="text-blue-100">기업</p>
-        <h2 className="text-xl font-bold">{employer?.company_name}</h2>
-      </div>
+        {/* (B) 통계 카드 3개 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <StatCard
+            icon={Briefcase}
+            iconBg="#FFF5F0"
+            iconColor="#E85C1E"
+            label="진행 중인 공고"
+            value={openJobsCount}
+            unit="건"
+          />
+          <StatCard
+            icon={UserPlus}
+            iconBg="#F0F4FF"
+            iconColor="#3B82F6"
+            label="신규 지원자"
+            value={newApplicantsCount}
+            unit="명"
+          />
+          <StatCard
+            icon={PhoneCall}
+            iconBg="#FFFBEA"
+            iconColor="#F59E0B"
+            label="연락 대기"
+            value={pendingContactCount}
+            unit="명"
+          />
+        </div>
 
-      {/* 공고 목록 */}
-      <div className="px-4 py-4">
-        <h3 className="text-lg font-bold text-gray-900 mb-3">내 공고 ({jobs.length})</h3>
+        {/* (C) 빠른 작업 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+          <button
+            onClick={() => navigate('/employer/post')}
+            className="flex items-center justify-center gap-2 py-4 px-6 rounded-xl text-white font-bold shadow-sm active:scale-[0.98] transition-transform"
+            style={{ background: '#E85C1E' }}
+          >
+            <Plus size={20} />
+            새 공고 등록
+          </button>
+          <button
+            onClick={() => alert('준비 중인 기능이에요.')}
+            className="flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold border border-gray-200 bg-white text-gray-700 active:scale-[0.98] transition-transform"
+          >
+            회사 정보 수정
+          </button>
+        </div>
 
-        {jobs.length === 0 ? (
-          <Card>
-            <div className="text-center py-8">
-              <p className="text-lg text-gray-500 mb-4">등록된 공고가 없습니다</p>
-              <Button onClick={() => navigate('/employer/post')}>
-                공고 등록하기
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {jobs.map((job) => (
-              <Card key={job.id}>
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    {getStatusBadge(job.status)}
-                    <h4 className="text-lg font-bold text-gray-900 mt-2">{job.title}</h4>
-                    <p className="text-gray-500">{job.job_type} · {job.address}</p>
+        {/* (D) 내 공고 섹션 */}
+        <div>
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3">
+            내 공고 <span className="text-gray-400 font-medium">({jobs.length})</span>
+          </h2>
+
+          {jobs.length === 0 ? (
+            <Card>
+              <div className="text-center py-12 px-4">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: '#FFF5F0' }}>
+                  <FileText size={32} style={{ color: '#E85C1E' }} />
+                </div>
+                <p className="text-lg font-bold text-gray-700 mb-2">
+                  아직 등록한 공고가 없어요
+                </p>
+                <p className="text-sm text-gray-500 mb-6">
+                  첫 공고를 등록하고 인재를 만나보세요
+                </p>
+                <Button onClick={() => navigate('/employer/post')}>
+                  + 공고 등록하기
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {jobs.map((job) => (
+                <Card key={job.id}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      {getStatusBadge(job.status)}
+                      <h4 className="text-lg font-bold text-gray-900 mt-2">{job.title}</h4>
+                      <p className="text-gray-500">{job.job_type} · {job.address}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="small"
-                    fullWidth={false}
-                    onClick={() => loadApplications(job.id)}
-                  >
-                    <Users size={18} />
-                    지원자 보기
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    fullWidth={false}
-                    onClick={() => toggleJobStatus(job.id, job.status)}
-                  >
-                    {job.status === 'open' ? '마감하기' : '다시 모집'}
-                  </Button>
-                </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="small"
+                      fullWidth={false}
+                      onClick={() => loadApplications(job.id)}
+                    >
+                      <Users size={18} />
+                      지원자 보기
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      fullWidth={false}
+                      onClick={() => toggleJobStatus(job.id, job.status)}
+                    >
+                      {job.status === 'open' ? '마감하기' : '다시 모집'}
+                    </Button>
+                  </div>
 
-                {/* 지원자 목록 (선택된 경우) */}
-                {selectedJob === job.id && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h5 className="font-bold text-gray-900 mb-3">
-                      지원자 목록 ({applications.length}명)
-                    </h5>
+                  {selectedJob === job.id && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h5 className="font-bold text-gray-900 mb-3">
+                        지원자 목록 ({applications.length}명)
+                      </h5>
 
-                    {loadingApps ? (
-                      <Loading text="불러오는 중..." />
-                    ) : applications.length === 0 ? (
-                      <p className="text-gray-500 py-4 text-center">아직 지원자가 없습니다</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {applications.map((app) => (
-                          <div
-                            key={app.id}
-                            className="bg-gray-50 rounded-xl p-4"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-lg font-bold">{app.workers?.name}</span>
-                                  {getAppStatusBadge(app.status)}
+                      {loadingApps ? (
+                        <Loading text="불러오는 중..." />
+                      ) : applications.length === 0 ? (
+                        <p className="text-gray-500 py-4 text-center">아직 지원자가 없습니다</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {applications.map((app) => (
+                            <div
+                              key={app.id}
+                              className="bg-gray-50 rounded-xl p-4"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-lg font-bold">{app.workers?.name}</span>
+                                    {getAppStatusBadge(app.status)}
+                                  </div>
+                                  {app.workers?.birth_year && (
+                                    <p className="text-gray-500">
+                                      {new Date().getFullYear() - app.workers.birth_year}세
+                                    </p>
+                                  )}
                                 </div>
-                                {app.workers?.birth_year && (
-                                  <p className="text-gray-500">
-                                    {new Date().getFullYear() - app.workers.birth_year}세
-                                  </p>
-                                )}
-                              </div>
-                              <a
-                                href={`tel:${app.workers?.phone}`}
-                                className="p-2 bg-blue-100 rounded-full text-blue-600"
-                              >
-                                <Phone size={20} />
-                              </a>
-                            </div>
-
-                            <div className="text-sm text-gray-600 space-y-1 mb-3">
-                              <div className="flex items-center gap-2">
-                                <MapPin size={16} />
-                                <span>{app.workers?.address || '주소 미등록'}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Clock size={16} />
-                                <span>{app.workers?.available_times?.join(', ') || '시간 미등록'}</span>
-                              </div>
-                            </div>
-
-                            {app.status === 'pending' && (
-                              <div className="flex gap-2">
-                                <Button
-                                  size="small"
-                                  onClick={() => updateApplicationStatus(app.id, 'hired')}
+                                <a
+                                  href={`tel:${app.workers?.phone}`}
+                                  className="p-2 bg-blue-100 rounded-full text-blue-600"
                                 >
-                                  <CheckCircle size={18} />
-                                  채용확정
-                                </Button>
-                                <Button
-                                  variant="secondary"
-                                  size="small"
-                                  onClick={() => updateApplicationStatus(app.id, 'rejected')}
-                                >
-                                  <XCircle size={18} />
-                                  불합격
-                                </Button>
+                                  <Phone size={20} />
+                                </a>
                               </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
+
+                              <div className="text-sm text-gray-600 space-y-1 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <MapPin size={16} />
+                                  <span>{app.workers?.address || '주소 미등록'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Clock size={16} />
+                                  <span>{app.workers?.available_times?.join(', ') || '시간 미등록'}</span>
+                                </div>
+                              </div>
+
+                              {app.status === 'pending' && (
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="small"
+                                    onClick={() => updateApplicationStatus(app.id, 'hired')}
+                                  >
+                                    <CheckCircle size={18} />
+                                    채용확정
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    size="small"
+                                    onClick={() => updateApplicationStatus(app.id, 'rejected')}
+                                  >
+                                    <XCircle size={18} />
+                                    불합격
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

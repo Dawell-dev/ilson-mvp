@@ -80,18 +80,20 @@ function EmployerPostPage() {
 
   if (step === 2) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-8">
-        <div className="bg-white px-4 py-4 border-b border-gray-200">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 text-lg"
-          >
-            <ArrowLeft size={24} />
-            <span>뒤로가기</span>
-          </button>
+      <div className="min-h-screen pb-8" style={{ background: '#F7F5F2' }}>
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-3xl mx-auto px-4 py-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-gray-600 text-lg"
+            >
+              <ArrowLeft size={24} />
+              <span>뒤로가기</span>
+            </button>
+          </div>
         </div>
 
-        <div className="px-6 py-6">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="text-green-500" size={20} />
             <span className="text-green-600 font-medium">인증된 기업</span>
@@ -212,8 +214,8 @@ function EmployerPostPage() {
 
   // Step 3: 완료
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
-      <div className="text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: '#F7F5F2' }}>
+      <div className="max-w-3xl mx-auto text-center">
         <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle className="text-green-600" size={48} />
         </div>
