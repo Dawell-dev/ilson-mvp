@@ -337,18 +337,20 @@ function EmployerSignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white px-4 py-4 border-b border-gray-200">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 text-lg"
-        >
-          <ArrowLeft size={24} />
-          <span>뒤로가기</span>
-        </button>
+    <div className="min-h-screen" style={{ background: '#F7F5F2' }}>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-3xl mx-auto px-4 py-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-600 text-lg"
+          >
+            <ArrowLeft size={24} />
+            <span>뒤로가기</span>
+          </button>
+        </div>
       </div>
 
-      <div className="px-6 py-8">
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
             <Building2 className="text-orange-600" size={24} />
