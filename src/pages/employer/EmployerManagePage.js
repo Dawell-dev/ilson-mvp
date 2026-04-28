@@ -1,15 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, CheckCircle, XCircle, Phone, MapPin, Clock, LogOut, Briefcase, UserPlus, PhoneCall, FileText } from 'lucide-react';
+import {
+  Plus,
+  Users,
+  CheckCircle,
+  XCircle,
+  Phone,
+  MapPin,
+  Clock,
+  LogOut,
+  Briefcase,
+  UserPlus,
+  PhoneCall,
+  FileText,
+  MoreVertical,
+  Trash2,
+  Eye,
+  EyeOff,
+  RefreshCw,
+} from 'lucide-react';
 import { Button, Card, Loading } from '../../components/common';
 import { supabase } from '../../lib/supabase';
 
 // 통계 카드 헬퍼
 function StatCard({ icon: Icon, iconBg, iconColor, label, value, unit }) {
   return (
-    <div
-      className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-    >
+    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
       <div className="flex items-center gap-3 mb-2">
         <div
           className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -29,6 +45,24 @@ function StatCard({ icon: Icon, iconBg, iconColor, label, value, unit }) {
   );
 }
 
+// 상태 배지 — open/draft/closed별 색상
+function StatusBadge({ status }) {
+  const map = {
+    open: { label: '게시중', bg: '#E8F5E9', color: '#2E7D32' },
+    draft: { label: '비공개', bg: '#F0EBE5', color: '#888780' },
+    closed: { label: '마감', bg: '#FEE8E8', color: '#C62828' },
+  };
+  const s = map[status] || map.open;
+  return (
+    <span
+      className="inline-block text-[12px] font-medium py-0.5 px-2 rounded-full"
+      style={{ background: s.bg, color: s.color }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
 function EmployerManagePage() {
   const navigate = useNavigate();
   const [employer, setEmployer] = useState(null);
@@ -37,16 +71,34 @@ function EmployerManagePage() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingApps, setLoadingApps] = useState(false);
+  const [openMenuJobId, setOpenMenuJobId] = useState(null);
+  const [toast, setToast] = useState('');
+
+  // 외부 클릭 시 메뉴 닫기 (데스크톱 드롭다운용)
+  useEffect(() => {
+    if (!openMenuJobId) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('[data-menu-root]')) {
+        setOpenMenuJobId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenuJobId]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 1500);
+  };
 
   useEffect(() => {
-    // Phase 1: localStorage 캐시에서 즉시 표시 (재방문 시 흰 화면 방지)
+    // Phase 1: localStorage 캐시에서 즉시 표시
     let cachedEmp = null;
     const cached = localStorage.getItem('employer');
     if (cached) {
       try {
         cachedEmp = JSON.parse(cached);
         setEmployer(cachedEmp);
-        // 화면 즉시 노출. jobs는 백그라운드에서 채워짐
         setLoading(false);
       } catch {
         localStorage.removeItem('employer');
@@ -57,14 +109,11 @@ function EmployerManagePage() {
     const verifyAndLoad = async () => {
       const { data: { session } } = await supabase.auth.getSession();
 
-      // (a) 세션 없음
       if (!session?.user) {
         if (!cachedEmp) {
-          // 캐시도 없으면 로그인 유도
           navigate('/employer/login');
           return;
         }
-        // 캐시는 있지만 세션 없음 → MVP 단계 fallback: jobs만 캐시 id로 fetch
         try {
           const { data, error } = await supabase
             .from('jobs')
@@ -81,7 +130,6 @@ function EmployerManagePage() {
         return;
       }
 
-      // (b) 세션 있음 → auth_user_id로 employers 정합성 검증
       const { data: emp } = await supabase
         .from('employers')
         .select('*')
@@ -89,14 +137,12 @@ function EmployerManagePage() {
         .maybeSingle();
 
       if (!emp) {
-        // 세션은 있지만 기업 레코드 없음 → 캐시·세션 정리 후 가입 유도
         await supabase.auth.signOut();
         localStorage.removeItem('employer');
         navigate('/employer/signup');
         return;
       }
 
-      // (c) 위변조 감지 — 캐시의 employer.id가 실제 검증 결과와 다르면 차단
       if (cachedEmp && cachedEmp.id !== emp.id) {
         console.warn('localStorage employer mismatch — 강제 로그아웃');
         await supabase.auth.signOut();
@@ -105,7 +151,6 @@ function EmployerManagePage() {
         return;
       }
 
-      // (d) 검증 통과 — state 및 캐시 갱신
       setEmployer(emp);
       localStorage.setItem('employer', JSON.stringify(emp));
 
@@ -142,7 +187,6 @@ function EmployerManagePage() {
         .select('*')
         .eq('employer_id', employer.id)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setJobs(data || []);
     } catch (error) {
@@ -200,29 +244,97 @@ function EmployerManagePage() {
     }
   };
 
-  const toggleJobStatus = async (jobId, currentStatus) => {
-    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+  // 액션 핸들러: draft/closed → open
+  const publishJob = async (jobId, fromDraft) => {
+    setOpenMenuJobId(null);
+    const message = fromDraft
+      ? '이 공고를 게시할까요? 구직자에게 노출됩니다.'
+      : '이 공고를 다시 게시할까요?';
+    if (!window.confirm(message)) return;
     try {
       const { error } = await supabase
         .from('jobs')
-        .update({ status: newStatus })
+        .update({ status: 'open' })
         .eq('id', jobId);
-
       if (error) throw error;
+      showToast(fromDraft ? '공고가 게시됐어요' : '공고가 다시 게시됐어요');
       refreshJobs();
-    } catch (error) {
+    } catch (e) {
       alert('상태 변경 중 오류가 발생했습니다.');
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      open: { text: '모집중', color: 'bg-green-100 text-green-700' },
-      closed: { text: '마감', color: 'bg-gray-100 text-gray-500' },
-      filled: { text: '채용완료', color: 'bg-blue-100 text-blue-700' },
-    };
-    const s = statusMap[status] || statusMap.open;
-    return <span className={`px-3 py-1 rounded-full text-sm font-medium ${s.color}`}>{s.text}</span>;
+  // 액션 핸들러: open → closed
+  const closeJob = async (jobId) => {
+    setOpenMenuJobId(null);
+    if (!window.confirm('이 공고를 마감할까요? 새 지원자 접수가 중단됩니다.')) return;
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: 'closed' })
+        .eq('id', jobId);
+      if (error) throw error;
+      showToast('공고가 마감됐어요');
+      refreshJobs();
+    } catch (e) {
+      alert('상태 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 액션 핸들러: 삭제 (draft, closed만)
+  const deleteJob = async (jobId) => {
+    setOpenMenuJobId(null);
+
+    // applications 카운트 확인
+    const { count, error: countError } = await supabase
+      .from('applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('job_id', jobId);
+
+    if (countError) {
+      alert('지원자 정보를 확인할 수 없어요.');
+      return;
+    }
+
+    if (count > 0) {
+      alert(
+        `이 공고에는 지원자 ${count}명의 기록이 있어 삭제할 수 없어요.\n마감 처리만 가능합니다.`
+      );
+      return;
+    }
+
+    if (!window.confirm('이 공고를 삭제할까요? 되돌릴 수 없습니다.')) return;
+
+    try {
+      const { error } = await supabase.from('jobs').delete().eq('id', jobId);
+      if (error) throw error;
+      showToast('공고가 삭제됐어요');
+      setJobs((prev) => prev.filter((j) => j.id !== jobId));
+    } catch (e) {
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // status별 메뉴 항목 빌더
+  const buildMenuItems = (job) => {
+    if (job.status === 'draft') {
+      return [
+        { label: '공고 게시하기', icon: Eye, onClick: () => publishJob(job.id, true) },
+        { label: '삭제', icon: Trash2, onClick: () => deleteJob(job.id), danger: true },
+      ];
+    }
+    if (job.status === 'open') {
+      return [
+        { label: '공고 마감하기', icon: EyeOff, onClick: () => closeJob(job.id) },
+      ];
+    }
+    if (job.status === 'closed') {
+      return [
+        { label: '다시 게시하기', icon: RefreshCw, onClick: () => publishJob(job.id, false) },
+        { label: '삭제', icon: Trash2, onClick: () => deleteJob(job.id), danger: true },
+      ];
+    }
+    return [];
   };
 
   const getAppStatusBadge = (status) => {
@@ -237,33 +349,22 @@ function EmployerManagePage() {
   };
 
   if (loading) {
-    // 스켈레톤 UI — 흰 화면 대신 페이지 골격을 회색 박스로 표시
     return (
       <div className="min-h-screen pb-12" style={{ background: '#F7F5F2' }}>
         <div className="max-w-3xl mx-auto px-4 md:px-6">
-          {/* 환영 섹션 */}
           <div className="py-6 md:py-8">
             <div className="h-7 md:h-8 bg-gray-200 rounded-md w-2/3 mb-3 animate-pulse" />
             <div className="h-4 bg-gray-200 rounded-md w-1/2 animate-pulse" />
           </div>
-
-          {/* 통계 카드 3개 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-[100px] bg-gray-200 rounded-xl animate-pulse"
-              />
+              <div key={i} className="h-[100px] bg-gray-200 rounded-xl animate-pulse" />
             ))}
           </div>
-
-          {/* 빠른 작업 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
             <div className="h-12 bg-gray-200 rounded-xl animate-pulse" />
             <div className="h-12 bg-gray-200 rounded-xl animate-pulse" />
           </div>
-
-          {/* 공고 섹션 */}
           <div className="h-6 bg-gray-200 rounded-md w-1/4 mb-3 animate-pulse" />
           <div className="space-y-3">
             <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
@@ -274,13 +375,25 @@ function EmployerManagePage() {
     );
   }
 
-  // 통계 (현재는 jobs.length만 실제 값. 나머지는 0 하드코딩)
+  // 통계
   const openJobsCount = jobs.filter((j) => j.status === 'open').length;
-  const newApplicantsCount = 0; // TODO: applications 테이블 연동 시 채우기
-  const pendingContactCount = 0; // TODO: 동일
+  const newApplicantsCount = 0;
+  const pendingContactCount = 0;
 
   return (
     <div className="min-h-screen pb-12" style={{ background: '#F7F5F2' }}>
+      {/* 토스트 */}
+      <div
+        className="fixed top-20 left-1/2 -translate-x-1/2 z-[300] py-2 px-5 rounded-full text-[13px] text-white transition-opacity"
+        style={{
+          background: 'rgba(0,0,0,0.75)',
+          opacity: toast ? 1 : 0,
+          pointerEvents: 'none',
+        }}
+      >
+        {toast}
+      </div>
+
       <div className="max-w-3xl mx-auto px-4 md:px-6">
         {/* (A) 환영 섹션 */}
         <div className="flex items-start justify-between gap-3 py-6 md:py-8">
@@ -357,7 +470,10 @@ function EmployerManagePage() {
           {jobs.length === 0 ? (
             <Card>
               <div className="text-center py-12 px-4">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: '#FFF5F0' }}>
+                <div
+                  className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                  style={{ background: '#FFF5F0' }}
+                >
                   <FileText size={32} style={{ color: '#E85C1E' }} />
                 </div>
                 <p className="text-lg font-bold text-gray-700 mb-2">
@@ -373,111 +489,199 @@ function EmployerManagePage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {jobs.map((job) => (
-                <Card key={job.id}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      {getStatusBadge(job.status)}
-                      <h4 className="text-lg font-bold text-gray-900 mt-2">{job.title}</h4>
-                      <p className="text-gray-500">{job.job_type} · {job.address}</p>
-                    </div>
-                  </div>
+              {jobs.map((job) => {
+                const isDraft = job.status === 'draft';
+                const isMenuOpen = openMenuJobId === job.id;
+                const menuItems = buildMenuItems(job);
 
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      size="small"
-                      fullWidth={false}
-                      onClick={() => loadApplications(job.id)}
-                    >
-                      <Users size={18} />
-                      지원자 보기
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      fullWidth={false}
-                      onClick={() => toggleJobStatus(job.id, job.status)}
-                    >
-                      {job.status === 'open' ? '마감하기' : '다시 모집'}
-                    </Button>
-                  </div>
+                return (
+                  <Card key={job.id}>
+                    <div className={`relative ${isDraft ? 'opacity-70' : ''}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1 min-w-0">
+                          <StatusBadge status={job.status} />
+                          <h4 className="text-lg font-bold text-gray-900 mt-2">{job.title}</h4>
+                          <p className="text-gray-500">
+                            {job.job_type} · {job.address}
+                          </p>
+                        </div>
 
-                  {selectedJob === job.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h5 className="font-bold text-gray-900 mb-3">
-                        지원자 목록 ({applications.length}명)
-                      </h5>
+                        {/* ⋮ 메뉴 버튼 */}
+                        <div data-menu-root className="relative flex-shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuJobId(isMenuOpen ? null : job.id);
+                            }}
+                            className="p-1.5 rounded-full hover:bg-gray-100 active:scale-90 transition-all"
+                            aria-label="메뉴"
+                          >
+                            <MoreVertical size={20} className="text-gray-500" />
+                          </button>
 
-                      {loadingApps ? (
-                        <Loading text="불러오는 중..." />
-                      ) : applications.length === 0 ? (
-                        <p className="text-gray-500 py-4 text-center">아직 지원자가 없습니다</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {applications.map((app) => (
-                            <div
-                              key={app.id}
-                              className="bg-gray-50 rounded-xl p-4"
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg font-bold">{app.workers?.name}</span>
-                                    {getAppStatusBadge(app.status)}
+                          {/* 데스크톱 드롭다운 */}
+                          {isMenuOpen && (
+                            <div className="hidden md:block absolute right-0 top-10 z-20 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 min-w-[170px]">
+                              {menuItems.map((item, i) => {
+                                const Icon = item.icon;
+                                return (
+                                  <button
+                                    key={i}
+                                    onClick={item.onClick}
+                                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2.5 transition-colors ${
+                                      item.danger
+                                        ? 'text-red-600 hover:bg-red-50'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <Icon size={16} />
+                                    {item.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 지원자 보기 버튼 */}
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="small"
+                          fullWidth={false}
+                          onClick={() => loadApplications(job.id)}
+                        >
+                          <Users size={18} />
+                          지원자 보기
+                        </Button>
+                      </div>
+
+                      {/* 지원자 목록 */}
+                      {selectedJob === job.id && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h5 className="font-bold text-gray-900 mb-3">
+                            지원자 목록 ({applications.length}명)
+                          </h5>
+
+                          {loadingApps ? (
+                            <Loading text="불러오는 중..." />
+                          ) : applications.length === 0 ? (
+                            <p className="text-gray-500 py-4 text-center">
+                              아직 지원자가 없습니다
+                            </p>
+                          ) : (
+                            <div className="space-y-3">
+                              {applications.map((app) => (
+                                <div key={app.id} className="bg-gray-50 rounded-xl p-4">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-lg font-bold">
+                                          {app.workers?.name}
+                                        </span>
+                                        {getAppStatusBadge(app.status)}
+                                      </div>
+                                      {app.workers?.birth_year && (
+                                        <p className="text-gray-500">
+                                          {new Date().getFullYear() - app.workers.birth_year}세
+                                        </p>
+                                      )}
+                                    </div>
+                                    <a
+                                      href={`tel:${app.workers?.phone}`}
+                                      className="p-2 bg-blue-100 rounded-full text-blue-600"
+                                    >
+                                      <Phone size={20} />
+                                    </a>
                                   </div>
-                                  {app.workers?.birth_year && (
-                                    <p className="text-gray-500">
-                                      {new Date().getFullYear() - app.workers.birth_year}세
-                                    </p>
+
+                                  <div className="text-sm text-gray-600 space-y-1 mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <MapPin size={16} />
+                                      <span>{app.workers?.address || '주소 미등록'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock size={16} />
+                                      <span>
+                                        {app.workers?.available_times?.join(', ') || '시간 미등록'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {app.status === 'pending' && (
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="small"
+                                        onClick={() => updateApplicationStatus(app.id, 'hired')}
+                                      >
+                                        <CheckCircle size={18} />
+                                        채용확정
+                                      </Button>
+                                      <Button
+                                        variant="secondary"
+                                        size="small"
+                                        onClick={() =>
+                                          updateApplicationStatus(app.id, 'rejected')
+                                        }
+                                      >
+                                        <XCircle size={18} />
+                                        불합격
+                                      </Button>
+                                    </div>
                                   )}
                                 </div>
-                                <a
-                                  href={`tel:${app.workers?.phone}`}
-                                  className="p-2 bg-blue-100 rounded-full text-blue-600"
-                                >
-                                  <Phone size={20} />
-                                </a>
-                              </div>
-
-                              <div className="text-sm text-gray-600 space-y-1 mb-3">
-                                <div className="flex items-center gap-2">
-                                  <MapPin size={16} />
-                                  <span>{app.workers?.address || '주소 미등록'}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Clock size={16} />
-                                  <span>{app.workers?.available_times?.join(', ') || '시간 미등록'}</span>
-                                </div>
-                              </div>
-
-                              {app.status === 'pending' && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="small"
-                                    onClick={() => updateApplicationStatus(app.id, 'hired')}
-                                  >
-                                    <CheckCircle size={18} />
-                                    채용확정
-                                  </Button>
-                                  <Button
-                                    variant="secondary"
-                                    size="small"
-                                    onClick={() => updateApplicationStatus(app.id, 'rejected')}
-                                  >
-                                    <XCircle size={18} />
-                                    불합격
-                                  </Button>
-                                </div>
-                              )}
+                              ))}
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </Card>
-              ))}
+
+                    {/* 모바일 바텀시트 메뉴 */}
+                    {isMenuOpen && (
+                      <div data-menu-root className="md:hidden fixed inset-0 z-[200]">
+                        <div
+                          onClick={() => setOpenMenuJobId(null)}
+                          className="absolute inset-0"
+                          style={{ background: 'rgba(0,0,0,0.5)' }}
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[24px] pb-2">
+                          <div className="flex justify-center pt-3 pb-1">
+                            <div className="w-10 h-1 rounded-full" style={{ background: '#DDD' }} />
+                          </div>
+                          <div className="px-5 pt-2 pb-3 border-b border-gray-100">
+                            <p className="text-sm font-medium text-gray-700 truncate">
+                              {job.title}
+                            </p>
+                          </div>
+                          {menuItems.map((item, i) => {
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={i}
+                                onClick={item.onClick}
+                                className={`w-full px-5 py-4 text-left text-base flex items-center gap-3 active:bg-gray-50 ${
+                                  item.danger ? 'text-red-600' : 'text-gray-800'
+                                }`}
+                              >
+                                <Icon size={18} />
+                                {item.label}
+                              </button>
+                            );
+                          })}
+                          <button
+                            onClick={() => setOpenMenuJobId(null)}
+                            className="w-full px-5 py-3 text-center text-sm text-gray-500 border-t border-gray-100 mt-2"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
