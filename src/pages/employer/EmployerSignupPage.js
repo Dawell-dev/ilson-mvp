@@ -249,10 +249,13 @@ function EmployerSignupPage() {
       }
 
       if (existing) {
-        // 이미 완전 가입된 계정 → 조용히 관리 페이지로
-        setDiagStep('✅ 기존 기업 계정 확인 — 이동 중');
+        // 이미 완전 가입된 계정 → 자동 로그인 세션 제거 후 로그인 페이지 안내
+        setDiagStep('✅ 기존 기업 계정 확인 — 로그인 페이지로 이동');
         localStorage.setItem('employer', JSON.stringify(existing));
-        navigate('/employer/manage');
+        await supabase.auth.signOut();
+        navigate(
+          `/employer/login?signup=success&email=${encodeURIComponent(formData.email)}`
+        );
         return;
       }
 
@@ -285,10 +288,14 @@ function EmployerSignupPage() {
         throw error;
       }
 
-      // 성공 — 조용히 이동 (alert 제거, UX 매끄럽게)
-      setDiagStep('✅ 완료 — 이동 중');
+      // 성공 — 자동 로그인 세션 제거 후 로그인 페이지로 안내
+      // (사용자가 자기 비밀번호로 직접 로그인해야 다음에 기억 가능)
+      setDiagStep('✅ 가입 완료 — 로그인 페이지로 이동');
       localStorage.setItem('employer', JSON.stringify(data[0]));
-      navigate('/employer/manage');
+      await supabase.auth.signOut();
+      navigate(
+        `/employer/login?signup=success&email=${encodeURIComponent(formData.email)}`
+      );
     } catch (error) {
       if (!diagError) {
         setDiagError({

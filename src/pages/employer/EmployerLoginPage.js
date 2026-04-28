@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Building2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Building2, CheckCircle } from 'lucide-react';
 import { Button, Input } from '../../components/common';
 import { supabase } from '../../lib/supabase';
 
 function EmployerLoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // 가입 직후 진입 여부 + 가입한 이메일 추출
+  const justSignedUp = searchParams.get('signup') === 'success';
+  const presetEmail = searchParams.get('email') || '';
+
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: presetEmail, password: '' });
   const [error, setError] = useState('');
   // 진단 패치 — 로그인 hang 원인 추적용 (안정화 후 제거 예정)
   const [diagStep, setDiagStep] = useState('');
@@ -157,6 +162,19 @@ function EmployerLoginPage() {
             <p className="text-gray-500">공고 관리 페이지로 이동합니다</p>
           </div>
         </div>
+
+        {/* 가입 직후 진입 시 안내 배너 */}
+        {justSignedUp && (
+          <div
+            className="flex items-start gap-2 p-4 mb-6 rounded-xl"
+            style={{ background: '#E8F5E9', border: '1.5px solid #66BB6A' }}
+          >
+            <CheckCircle size={20} className="flex-shrink-0 mt-0.5" style={{ color: '#2E7D32' }} />
+            <div className="text-sm font-medium" style={{ color: '#1B5E20' }}>
+              가입이 완료됐어요! 방금 만든 비밀번호로 로그인해주세요.
+            </div>
+          </div>
+        )}
 
         <div className="space-y-5">
           <Input
