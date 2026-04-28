@@ -20,7 +20,7 @@
  * - 검색/선택 시 region state 즉시 갱신
  */
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
@@ -140,6 +140,7 @@ function extractFullAddress(item) {
 // 1) 로그인 화면
 // ─────────────────────────────────────
 function LoginScreen({ onNext }) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
 
@@ -215,6 +216,17 @@ function LoginScreen({ onNext }) {
         </button>
         <div className="text-center mt-3 text-[15px] text-[#9E9E9E] leading-relaxed animate-fade-up animation-delay-250">
           터치 한 번이면 바로 시작돼요
+        </div>
+
+        {/* 기업 로그인 링크 */}
+        <div className="text-center mt-4 text-[14px] text-[#888780] animate-fade-up animation-delay-300">
+          기업 회원이신가요?{' '}
+          <button
+            onClick={() => navigate('/employer/login')}
+            className="text-[#5F5E5A] underline font-medium ml-0.5"
+          >
+            로그인
+          </button>
         </div>
 
         {/* 구분선 */}
