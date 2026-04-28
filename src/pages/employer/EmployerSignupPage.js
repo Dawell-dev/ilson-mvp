@@ -13,9 +13,6 @@ function EmployerSignupPage() {
   const [businessFile, setBusinessFile] = useState(null);
   const [businessFilePreview, setBusinessFilePreview] = useState(null);
   const fileInputRef = useRef(null);
-  // 🔧 진단 패치 — 가입이 어디서 막히는지 화면에 상시 노출
-  const [diagStep, setDiagStep] = useState('');
-  const [diagError, setDiagError] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -129,17 +126,15 @@ function EmployerSignupPage() {
     }
 
     setLoading(true);
-    setDiagError(null);
-    setDiagStep('1/4 계정 생성/확인 중...');
 
-    // 방안 A — signUp 5초 타임아웃 + signInWithPassword 폴백
     // 신규 가입 / 유령 계정(auth만 있고 employers 없음) / 이미 완전 가입된 이메일
-    // 세 시나리오를 한 플로우로 처리.
+    // 세 시나리오를 한 플로우로 처리. signUp/signIn hang 대비 5초 타임아웃 + 폴백.
     const SIGN_UP_TIMEOUT_MS = 5000;
+    const SIGN_IN_TIMEOUT_MS = 5000;
     let authUserId = null;
 
     try {
-      // Step A: signUp 시도 (타임아웃)
+      // Step A: signUp (5초 타임아웃)
       try {
         const signUpRace = await Promise.race([
           supabase.auth.signUp({
@@ -159,42 +154,25 @@ function EmployerSignupPage() {
             msg.includes('exists')
           ) {
             // 이미 가입된 이메일 → signIn 폴백으로 넘어감
-            setDiagStep('2/4 기존 계정 확인 — 로그인으로 전환...');
           } else {
-            setDiagError({
-              stage: 'signUp',
-              message: signUpRace.error.message || '(없음)',
-              status: signUpRace.error.status ?? '(없음)',
-            });
             alert('회원가입 오류: ' + signUpRace.error.message);
             return;
           }
         } else {
           authUserId = signUpRace?.data?.user?.id || null;
-          if (authUserId) {
-            setDiagStep('2/4 계정 생성 성공');
-          }
         }
       } catch (e) {
-        if (e?.message === 'SIGNUP_TIMEOUT') {
-          setDiagStep('2/4 signUp 응답 지연 — 로그인으로 전환...');
-        } else {
-          setDiagError({
-            stage: 'signUpException',
-            message: e?.message || '(없음)',
-            name: e?.name || '(없음)',
-          });
+        if (e?.message !== 'SIGNUP_TIMEOUT') {
           alert('가입 시도 중 오류: ' + (e?.message || '알 수 없음'));
           return;
         }
+        // 타임아웃 → 다음 단계(signIn)로
       }
 
-      // Step B: authUserId 없으면 signInWithPassword로 세션 확보
-      // signIn도 hang 위험 있음 → 5초 타임아웃 + getSession 이중 폴백
-      const SIGN_IN_TIMEOUT_MS = 5000;
+      // Step B: authUserId 없으면 signInWithPassword 폴백 + 5초 타임아웃 + getSession 이중 폴백
       if (!authUserId) {
         try {
-          // B-1: signInWithPassword 5초 타임아웃
+          // B-1: signInWithPassword (5초 타임아웃)
           try {
             const result = await Promise.race([
               supabase.auth.signInWithPassword({
@@ -207,54 +185,34 @@ function EmployerSignupPage() {
             ]);
 
             if (result?.error) {
-              setDiagError({
-                stage: 'signInFallback',
-                message: result.error.message || '(없음)',
-                status: result.error.status ?? '(없음)',
-              });
               alert('로그인 확인 실패: ' + result.error.message);
               return;
             }
 
             authUserId = result?.data?.user?.id || null;
-            if (authUserId) {
-              setDiagStep('2/4 로그인으로 세션 확보 완료');
-            }
           } catch (e) {
-            if (e?.message === 'SIGNIN_TIMEOUT') {
-              setDiagStep('2/4 signIn 응답 지연 — 세션 확인 중...');
-            } else {
+            if (e?.message !== 'SIGNIN_TIMEOUT') {
               throw e;
             }
+            // 타임아웃이면 getSession으로
           }
 
-          // B-2: signIn 타임아웃이면 getSession으로 메모리/스토리지 세션 확인
+          // B-2: signIn 타임아웃이면 getSession 폴백
           if (!authUserId) {
             const { data: sessionData } = await supabase.auth.getSession();
             authUserId = sessionData?.session?.user?.id || null;
-            if (authUserId) {
-              setDiagStep('2/4 세션 복원 완료 (이중 폴백)');
-            } else {
-              setDiagError({
-                stage: 'signInFallback',
-                message: 'signIn 타임아웃 + 세션도 미저장',
-              });
+            if (!authUserId) {
               alert('계정 확인에 실패했어요. 다시 시도해주세요.');
               return;
             }
           }
         } catch (e) {
-          setDiagError({
-            stage: 'signInException',
-            message: e?.message || '(없음)',
-          });
           alert('로그인 폴백 예외: ' + (e?.message || '알 수 없음'));
           return;
         }
       }
 
       // Step C: employers 중복 확인
-      setDiagStep('3/4 기업 정보 확인 중...');
       const { data: existing, error: existingError } = await supabase
         .from('employers')
         .select('*')
@@ -262,20 +220,12 @@ function EmployerSignupPage() {
         .maybeSingle();
 
       if (existingError) {
-        setDiagError({
-          stage: 'checkDuplicate',
-          message: existingError.message || '(없음)',
-          code: existingError.code || '(없음)',
-          details: existingError.details || '(없음)',
-          hint: existingError.hint || '(없음)',
-        });
         alert('중복 확인 중 오류: ' + existingError.message);
         return;
       }
 
       if (existing) {
         // 이미 완전 가입된 계정 → 자동 로그인 세션 제거 후 로그인 페이지 안내
-        setDiagStep('✅ 기존 기업 계정 확인 — 로그인 페이지로 이동');
         localStorage.setItem('employer', JSON.stringify(existing));
         await supabase.auth.signOut();
         navigate(
@@ -285,7 +235,6 @@ function EmployerSignupPage() {
       }
 
       // Step D: employers insert (신규 / 유령 계정 구제)
-      setDiagStep('4/4 기업 정보 저장 중...');
       const { data, error } = await supabase
         .from('employers')
         .insert([
@@ -302,34 +251,15 @@ function EmployerSignupPage() {
         ])
         .select();
 
-      if (error) {
-        setDiagError({
-          stage: 'insertEmployers',
-          message: error.message || '(없음)',
-          code: error.code || '(없음)',
-          details: error.details || '(없음)',
-          hint: error.hint || '(없음)',
-        });
-        throw error;
-      }
+      if (error) throw error;
 
       // 성공 — 자동 로그인 세션 제거 후 로그인 페이지로 안내
-      // (사용자가 자기 비밀번호로 직접 로그인해야 다음에 기억 가능)
-      setDiagStep('✅ 가입 완료 — 로그인 페이지로 이동');
       localStorage.setItem('employer', JSON.stringify(data[0]));
       await supabase.auth.signOut();
       navigate(
         `/employer/login?signup=success&email=${encodeURIComponent(formData.email)}`
       );
     } catch (error) {
-      if (!diagError) {
-        setDiagError({
-          stage: 'finalException',
-          message: error?.message || '(없음)',
-          name: error?.name || '(없음)',
-          stack: (error?.stack || '').slice(0, 400),
-        });
-      }
       alert('가입 중 오류가 발생했습니다: ' + (error?.message || '알 수 없음'));
     } finally {
       setLoading(false);
@@ -579,56 +509,6 @@ function EmployerSignupPage() {
               로그인
             </button>
           </p>
-
-          {/* 🔧 진단 패널 — 가입 실패 원인 추적용. 해결 후 제거 예정 */}
-          {(diagStep || diagError) && (
-            <div className="mt-4 p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
-              <div className="text-sm font-bold text-blue-700 mb-2">🔍 진단</div>
-              {diagStep && (
-                <div className="text-sm text-blue-700 mb-2 break-all">
-                  <span className="font-medium">현재 단계: </span>
-                  {diagStep}
-                </div>
-              )}
-              {diagError && (
-                <div className="text-xs text-red-700 bg-red-50 rounded-lg p-2 mt-2 space-y-1 break-all">
-                  <div>
-                    <span className="font-bold">❌ stage:</span> {diagError.stage}
-                  </div>
-                  <div>
-                    <span className="font-bold">message:</span> {diagError.message}
-                  </div>
-                  {diagError.code && (
-                    <div>
-                      <span className="font-bold">code:</span> {diagError.code}
-                    </div>
-                  )}
-                  {diagError.status !== undefined && (
-                    <div>
-                      <span className="font-bold">status:</span> {diagError.status}
-                    </div>
-                  )}
-                  {diagError.hint && (
-                    <div>
-                      <span className="font-bold">hint:</span> {diagError.hint}
-                    </div>
-                  )}
-                  {diagError.details && (
-                    <div>
-                      <span className="font-bold">details:</span> {diagError.details}
-                    </div>
-                  )}
-                  {diagError.dump && (
-                    <div className="whitespace-pre-wrap mt-1">
-                      <span className="font-bold">dump:</span>
-                      <br />
-                      {diagError.dump}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
