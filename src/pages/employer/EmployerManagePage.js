@@ -39,44 +39,75 @@ function EmployerManagePage() {
   const [loadingApps, setLoadingApps] = useState(false);
 
   useEffect(() => {
-    const loadData = async () => {
-      // 1. 세션 우선 확인 (이메일/비밀번호 로그인)
+    // Phase 1: localStorage 캐시에서 즉시 표시 (재방문 시 흰 화면 방지)
+    let cachedEmp = null;
+    const cached = localStorage.getItem('employer');
+    if (cached) {
+      try {
+        cachedEmp = JSON.parse(cached);
+        setEmployer(cachedEmp);
+        // 화면 즉시 노출. jobs는 백그라운드에서 채워짐
+        setLoading(false);
+      } catch {
+        localStorage.removeItem('employer');
+      }
+    }
+
+    // Phase 2: 백그라운드 인증 검증 + 데이터 fetch
+    const verifyAndLoad = async () => {
       const { data: { session } } = await supabase.auth.getSession();
 
-      let emp = null;
-      if (session?.user) {
-        // 세션 있음 → auth_user_id 기준 employers 조회
-        const { data: row } = await supabase
-          .from('employers')
-          .select('*')
-          .eq('auth_user_id', session.user.id)
-          .maybeSingle();
-
-        if (row) {
-          emp = row;
-          localStorage.setItem('employer', JSON.stringify(row));
-        } else {
-          // 세션은 있지만 기업 레코드 없음 → 가입 유도
-          navigate('/employer/signup');
-          return;
-        }
-      } else {
-        // 세션 없음 → localStorage fallback
-        const savedEmployer = localStorage.getItem('employer');
-        if (!savedEmployer) {
+      // (a) 세션 없음
+      if (!session?.user) {
+        if (!cachedEmp) {
+          // 캐시도 없으면 로그인 유도
           navigate('/employer/login');
           return;
         }
+        // 캐시는 있지만 세션 없음 → MVP 단계 fallback: jobs만 캐시 id로 fetch
         try {
-          emp = JSON.parse(savedEmployer);
-        } catch {
-          localStorage.removeItem('employer');
-          navigate('/employer/login');
-          return;
+          const { data, error } = await supabase
+            .from('jobs')
+            .select('*')
+            .eq('employer_id', cachedEmp.id)
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          setJobs(data || []);
+        } catch (error) {
+          console.error('Error loading jobs:', error);
+        } finally {
+          setLoading(false);
         }
+        return;
       }
 
+      // (b) 세션 있음 → auth_user_id로 employers 정합성 검증
+      const { data: emp } = await supabase
+        .from('employers')
+        .select('*')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+
+      if (!emp) {
+        // 세션은 있지만 기업 레코드 없음 → 캐시·세션 정리 후 가입 유도
+        await supabase.auth.signOut();
+        localStorage.removeItem('employer');
+        navigate('/employer/signup');
+        return;
+      }
+
+      // (c) 위변조 감지 — 캐시의 employer.id가 실제 검증 결과와 다르면 차단
+      if (cachedEmp && cachedEmp.id !== emp.id) {
+        console.warn('localStorage employer mismatch — 강제 로그아웃');
+        await supabase.auth.signOut();
+        localStorage.removeItem('employer');
+        navigate('/employer/login');
+        return;
+      }
+
+      // (d) 검증 통과 — state 및 캐시 갱신
       setEmployer(emp);
+      localStorage.setItem('employer', JSON.stringify(emp));
 
       try {
         const { data, error } = await supabase
@@ -84,7 +115,6 @@ function EmployerManagePage() {
           .select('*')
           .eq('employer_id', emp.id)
           .order('created_at', { ascending: false });
-
         if (error) throw error;
         setJobs(data || []);
       } catch (error) {
@@ -93,7 +123,8 @@ function EmployerManagePage() {
         setLoading(false);
       }
     };
-    loadData();
+
+    verifyAndLoad();
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -206,9 +237,39 @@ function EmployerManagePage() {
   };
 
   if (loading) {
+    // 스켈레톤 UI — 흰 화면 대신 페이지 골격을 회색 박스로 표시
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F5F2' }}>
-        <Loading />
+      <div className="min-h-screen pb-12" style={{ background: '#F7F5F2' }}>
+        <div className="max-w-3xl mx-auto px-4 md:px-6">
+          {/* 환영 섹션 */}
+          <div className="py-6 md:py-8">
+            <div className="h-7 md:h-8 bg-gray-200 rounded-md w-2/3 mb-3 animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded-md w-1/2 animate-pulse" />
+          </div>
+
+          {/* 통계 카드 3개 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-[100px] bg-gray-200 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
+
+          {/* 빠른 작업 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+            <div className="h-12 bg-gray-200 rounded-xl animate-pulse" />
+            <div className="h-12 bg-gray-200 rounded-xl animate-pulse" />
+          </div>
+
+          {/* 공고 섹션 */}
+          <div className="h-6 bg-gray-200 rounded-md w-1/4 mb-3 animate-pulse" />
+          <div className="space-y-3">
+            <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
+            <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }
