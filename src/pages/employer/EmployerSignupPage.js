@@ -190,34 +190,59 @@ function EmployerSignupPage() {
       }
 
       // Step B: authUserId 없으면 signInWithPassword로 세션 확보
+      // signIn도 hang 위험 있음 → 5초 타임아웃 + getSession 이중 폴백
+      const SIGN_IN_TIMEOUT_MS = 5000;
       if (!authUserId) {
         try {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password,
-          });
+          // B-1: signInWithPassword 5초 타임아웃
+          try {
+            const result = await Promise.race([
+              supabase.auth.signInWithPassword({
+                email: formData.email,
+                password: formData.password,
+              }),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SIGNIN_TIMEOUT')), SIGN_IN_TIMEOUT_MS)
+              ),
+            ]);
 
-          if (signInError) {
-            setDiagError({
-              stage: 'signInFallback',
-              message: signInError.message || '(없음)',
-              status: signInError.status ?? '(없음)',
-            });
-            alert('로그인 확인 실패: ' + signInError.message);
-            return;
+            if (result?.error) {
+              setDiagError({
+                stage: 'signInFallback',
+                message: result.error.message || '(없음)',
+                status: result.error.status ?? '(없음)',
+              });
+              alert('로그인 확인 실패: ' + result.error.message);
+              return;
+            }
+
+            authUserId = result?.data?.user?.id || null;
+            if (authUserId) {
+              setDiagStep('2/4 로그인으로 세션 확보 완료');
+            }
+          } catch (e) {
+            if (e?.message === 'SIGNIN_TIMEOUT') {
+              setDiagStep('2/4 signIn 응답 지연 — 세션 확인 중...');
+            } else {
+              throw e;
+            }
           }
 
-          authUserId = signInData?.user?.id || null;
+          // B-2: signIn 타임아웃이면 getSession으로 메모리/스토리지 세션 확인
           if (!authUserId) {
-            setDiagError({
-              stage: 'signInFallback',
-              message: '로그인 응답에 user.id 없음',
-            });
-            alert('계정 확인에 실패했어요. 다시 시도해주세요.');
-            return;
+            const { data: sessionData } = await supabase.auth.getSession();
+            authUserId = sessionData?.session?.user?.id || null;
+            if (authUserId) {
+              setDiagStep('2/4 세션 복원 완료 (이중 폴백)');
+            } else {
+              setDiagError({
+                stage: 'signInFallback',
+                message: 'signIn 타임아웃 + 세션도 미저장',
+              });
+              alert('계정 확인에 실패했어요. 다시 시도해주세요.');
+              return;
+            }
           }
-
-          setDiagStep('2/4 로그인으로 세션 확보 완료');
         } catch (e) {
           setDiagError({
             stage: 'signInException',
