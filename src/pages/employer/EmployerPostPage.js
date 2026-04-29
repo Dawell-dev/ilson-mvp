@@ -59,7 +59,8 @@ function EmployerPostPage() {
     headcount: '1',
     address: '',
     detailAddress: '',
-    hourlyWage: '',
+    wageType: 'hourly',
+    wageAmount: '',
     workHours: '',
     workDays: [],
     description: '',
@@ -89,11 +90,11 @@ function EmployerPostPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 시급 천단위 콤마
+  // 급여 천단위 콤마
   const handleWageChange = (e) => {
     const raw = e.target.value.replace(/[^0-9]/g, '');
     const formatted = raw ? Number(raw).toLocaleString() : '';
-    setField('hourlyWage', formatted);
+    setField('wageAmount', formatted);
   };
 
   const toggleWeekday = (day) => {
@@ -127,8 +128,8 @@ function EmployerPostPage() {
 
     // 필수 검증 (open만)
     if (statusValue === 'open') {
-      if (!formData.title || !formData.jobType || !formData.address || !formData.hourlyWage) {
-        alert('필수 항목을 모두 입력해주세요. (제목, 직종, 주소, 시급)');
+      if (!formData.title || !formData.jobType || !formData.address || !formData.wageAmount) {
+        alert('필수 항목을 모두 입력해주세요. (제목, 직종, 주소, 급여)');
         return;
       }
       if (formData.jobType === '기타' && !formData.customJobType) {
@@ -178,14 +179,19 @@ function EmployerPostPage() {
         ? `${formData.address} ${formData.detailAddress}`.trim()
         : formData.address;
 
+      const wageAmountNum = formData.wageAmount
+        ? parseInt(formData.wageAmount.replace(/,/g, ''), 10) || null
+        : null;
+
       const payload = {
         employer_id: employerId,
         title: formData.title || '(제목 없음)',
         job_type: finalJobType || null,
         address: fullAddress || null,
-        hourly_wage: formData.hourlyWage
-          ? parseInt(formData.hourlyWage.replace(/,/g, ''), 10) || null
-          : null,
+        wage_type: formData.wageType,
+        wage_amount: wageAmountNum,
+        // 기존 hourly_wage는 hourly일 때만 fallback으로 채움 (호환성 유지)
+        hourly_wage: formData.wageType === 'hourly' ? wageAmountNum : null,
         work_hours: formData.workHours || null,
         work_days: formData.workDays.join(',') || null,
         description: formData.description || null,
@@ -324,20 +330,73 @@ function EmployerPostPage() {
         {/* Section 3: 근무 조건 */}
         <Section icon={Building2} title="근무 조건">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="시급" required hint="원 단위, 천단위 콤마는 자동 표시">
+            <Field label="급여" required hint="단위를 선택하고 금액을 입력해주세요">
+              {/* 단위 토글 (시급 / 일급 / 월급) */}
+              <div className="flex gap-1.5 mb-2">
+                {[
+                  { value: 'hourly', label: '시급' },
+                  { value: 'daily', label: '일급' },
+                  { value: 'monthly', label: '월급' },
+                ].map((opt) => {
+                  const on = formData.wageType === opt.value;
+                  return (
+                    <button
+                      type="button"
+                      key={opt.value}
+                      onClick={() => setField('wageType', opt.value)}
+                      className="flex-1 py-2 rounded-lg text-sm font-bold border-[1.5px] active:scale-95 transition-all"
+                      style={
+                        on
+                          ? { background: '#E85C1E', color: '#fff', borderColor: '#E85C1E' }
+                          : { background: '#F7F5F2', color: '#888780', borderColor: '#EDE8E2' }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 금액 입력 */}
               <div className="relative">
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={formData.hourlyWage}
+                  value={formData.wageAmount}
                   onChange={handleWageChange}
-                  placeholder="10,500"
+                  placeholder={
+                    formData.wageType === 'hourly'
+                      ? '예) 10,500'
+                      : formData.wageType === 'daily'
+                      ? '예) 120,000'
+                      : '예) 2,500,000'
+                  }
                   className={`${inputBase} pr-9`}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
                   원
                 </span>
               </div>
+
+              {/* 비정상 입력 안내 (저장 차단 X, 안내만) */}
+              {(() => {
+                const num = parseInt(formData.wageAmount.replace(/,/g, ''), 10) || 0;
+                if (formData.wageType === 'hourly' && num > 0 && num < 9860) {
+                  return (
+                    <p className="text-[12px] mt-1.5" style={{ color: '#888780' }}>
+                      💡 2024 최저시급(9,860원) 미만이에요. 한 번 더 확인해주세요.
+                    </p>
+                  );
+                }
+                if (formData.wageType === 'monthly' && num > 100000000) {
+                  return (
+                    <p className="text-[12px] mt-1.5" style={{ color: '#888780' }}>
+                      💡 금액이 너무 큰 것 같아요. 한 번 더 확인해주세요.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </Field>
 
             <Field label="근무 시간">

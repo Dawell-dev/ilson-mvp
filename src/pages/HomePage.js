@@ -29,7 +29,13 @@ const JOB_ICONS = { '경비': '🏢', '청소': '🧹', '주차관리': '🅿️
 
 function formatJobFromDB(job, index) {
   const icon = JOB_ICONS[job.job_type] || '💼';
-  const wage = job.hourly_wage ? `시급 ${job.hourly_wage?.toLocaleString()}원` : '';
+  // wage_type/wage_amount 우선, 기존 hourly_wage는 fallback
+  const wageAmount = job.wage_amount ?? job.hourly_wage;
+  const wageType = job.wage_type || 'hourly';
+  const wageLabelMap = { hourly: '시급', daily: '일급', weekly: '주급', monthly: '월급' };
+  const wage = wageAmount
+    ? `${wageLabelMap[wageType] || '급여'} ${Number(wageAmount).toLocaleString()}원`
+    : '';
   const tags = [job.work_hours, job.work_days].filter(Boolean);
   const createdAt = new Date(job.created_at);
   const now = new Date();

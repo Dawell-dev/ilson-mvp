@@ -45,6 +45,20 @@ function StatCard({ icon: Icon, iconBg, iconColor, label, value, unit }) {
   );
 }
 
+// 급여 포맷터 — wage_type/wage_amount 우선, 기존 hourly_wage는 fallback
+const WAGE_LABEL = {
+  hourly: '시급',
+  daily: '일급',
+  weekly: '주급',
+  monthly: '월급',
+};
+function formatWage(job) {
+  const amount = job.wage_amount ?? job.hourly_wage;
+  if (!amount) return '급여 미정';
+  const type = job.wage_type || 'hourly';
+  return `${WAGE_LABEL[type] || '급여'} ${Number(amount).toLocaleString()}원`;
+}
+
 // 상태 배지 — open/draft/closed별 색상
 function StatusBadge({ status }) {
   const map = {
@@ -503,6 +517,12 @@ function EmployerManagePage() {
                           <h4 className="text-lg font-bold text-gray-900 mt-2">{job.title}</h4>
                           <p className="text-gray-500">
                             {job.job_type} · {job.address}
+                          </p>
+                          <p
+                            className="text-sm font-bold mt-1"
+                            style={{ color: '#E85C1E' }}
+                          >
+                            {formatWage(job)}
                           </p>
                         </div>
 
