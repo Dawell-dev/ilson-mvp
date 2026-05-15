@@ -8,18 +8,40 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // URL에서 인증 코드 처리
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        const errorParam = url.searchParams.get('error');
 
-        if (error) {
-          console.error('인증 오류:', error);
+        if (errorParam) {
+          console.error('OAuth 에러:', errorParam);
           navigate('/login');
           return;
         }
 
-        if (session) {
-          // 카카오 OAuth는 구직자 전용. workers 테이블만 확인.
+        // PKCE 코드를 세션으로 명시적 교환
+        if (code) {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) {
+            console.error('세션 교환 실패:', exchangeError);
+            navigate('/login');
+            return;
+          }
+
+          const session = data.session;
+          if (!session) {
+            navigate('/login');
+            return;
+          }
+
+          // 사용자 분기
           const kakaoId = session.user.user_metadata?.provider_id;
+          
+          if (!kakaoId) {
+            navigate('/select-role');
+            return;
+          }
+
           const { data: worker } = await supabase
             .from('workers')
             .select('id')
@@ -28,10 +50,15 @@ const AuthCallback = () => {
 
           if (worker) {
             navigate('/jobs');
-            return;
+          } else {
+            navigate('/select-role');
           }
+          return;
+        }
 
-          // 신규 사용자 - 역할 선택 페이지로
+        // code가 없는 경우 (직접 진입)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
           navigate('/select-role');
         } else {
           navigate('/login');
