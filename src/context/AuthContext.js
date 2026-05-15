@@ -10,25 +10,58 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 사용자 프로필 가져오기
+  const fetchUserProfile = async (user) => {
+    try {
+      const { data: worker } = await supabase
+        .from('workers')
+        .select('*')
+        .eq('kakao_id', user.user_metadata?.provider_id)
+        .maybeSingle();
+
+      if (worker) {
+        setUserProfile({ ...worker, type: 'worker' });
+        return;
+      }
+
+      const { data: employer } = await supabase
+        .from('employers')
+        .select('*')
+        .eq('kakao_id', user.user_metadata?.provider_id)
+        .maybeSingle();
+
+      if (employer) {
+        setUserProfile({ ...employer, type: 'employer' });
+        return;
+      }
+
+      setUserProfile(null);
+    } catch (error) {
+      console.error('프로필 조회 오류:', error);
+      setUserProfile(null);
+    }
+  };
+
   useEffect(() => {
     // 현재 세션 확인
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchUserProfile(session.user);
+        fetchUserProfile(session.user);  // await 제거
       }
       setLoading(false);
     };
 
     getSession();
 
-    // 인증 상태 변화 감지
+    // 인증 상태 변화 감지 - 콜백이 즉시 끝나도록 await 제거
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {  // async 제거
+        console.log('[Auth] 상태 변화:', event, session?.user?.id);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchUserProfile(session.user);
+          fetchUserProfile(session.user);  // await 없이 백그라운드 실행
         } else {
           setUserProfile(null);
         }
@@ -38,41 +71,6 @@ export const AuthProvider = ({ children }) => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // 사용자 프로필 가져오기 (workers 또는 employers 테이블에서)
-  const fetchUserProfile = async (user) => {
-    try {
-      // 먼저 workers 테이블에서 확인
-      const { data: worker } = await supabase
-        .from('workers')
-        .select('*')
-        .eq('kakao_id', user.user_metadata?.provider_id)
-        .single();
-
-      if (worker) {
-        setUserProfile({ ...worker, type: 'worker' });
-        return;
-      }
-
-      // employers 테이블에서 확인
-      const { data: employer } = await supabase
-        .from('employers')
-        .select('*')
-        .eq('kakao_id', user.user_metadata?.provider_id)
-        .single();
-
-      if (employer) {
-        setUserProfile({ ...employer, type: 'employer' });
-        return;
-      }
-
-      // 프로필 없음 (신규 사용자)
-      setUserProfile(null);
-    } catch (error) {
-      console.error('프로필 조회 오류:', error);
-      setUserProfile(null);
-    }
-  };
 
   // 카카오 로그인
   const signInWithKakao = async () => {
