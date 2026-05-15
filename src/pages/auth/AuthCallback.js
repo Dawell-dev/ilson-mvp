@@ -8,17 +8,36 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // URL에서 인증 코드 처리
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // 1. URL에서 code 파라미터 추출
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        const errorParam = url.searchParams.get('error');
 
-        if (error) {
-          console.error('인증 오류:', error);
+        // OAuth 자체 에러 처리 (사용자 취소 등)
+        if (errorParam) {
+          console.error('OAuth 에러:', errorParam, url.searchParams.get('error_description'));
           navigate('/login');
           return;
         }
 
-        if (session) {
-          // 카카오 OAuth는 구직자 전용. workers 테이블만 확인.
+        // 2. code가 있으면 세션으로 교환 (PKCE flow)
+        if (code) {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.error('세션 교환 실패:', exchangeError);
+            navigate('/login');
+            return;
+          }
+
+          if (!data.session) {
+            console.error('세션이 생성되지 않음');
+            navigate('/login');
+            return;
+          }
+
+          // 3. 세션 확인 후 사용자 분기 (기존 로직)
+          const session = data.session;
           const kakaoId = session.user.user_metadata?.provider_id;
 
           const { data: worker } = await supabase
@@ -34,9 +53,19 @@ const AuthCallback = () => {
 
           // 신규 사용자 - 역할 선택 페이지로
           navigate('/select-role');
-        } else {
-          navigate('/login');
+          return;
         }
+
+        // 4. code가 없으면 이미 세션 있는지만 확인 (재진입 케이스)
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          navigate('/login');
+          return;
+        }
+
+        // 세션은 있지만 분기 미정인 경우
+        navigate('/select-role');
       } catch (error) {
         console.error('콜백 처리 오류:', error);
         navigate('/login');
