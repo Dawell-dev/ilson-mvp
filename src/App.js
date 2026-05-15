@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
 // 인증 페이지
@@ -27,36 +27,55 @@ import AdminMatchPage from './pages/admin/AdminMatchPage';
 import AdminNotifyPage from './pages/admin/AdminNotifyPage';
 import AdminEmployerPage from './pages/admin/AdminEmployerPage';
 
+// OAuth 콜백 인터셉터 — 루트로 도착한 ?code= 를 /auth/callback 으로 리다이렉트
+const OAuthInterceptor = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const code = searchParams.get('code');
+
+    if (code && location.pathname === '/') {
+      navigate(`/auth/callback${location.search}`, { replace: true });
+    }
+  }, [location, navigate]);
+
+  return children;
+};
+
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
-          {/* 메인 */}
-          <Route path="/" element={<HomePage />} />
+        <OAuthInterceptor>
+          <Routes>
+            {/* 메인 */}
+            <Route path="/" element={<HomePage />} />
 
-          {/* 인증 */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/select-role" element={<SelectRolePage />} />
+            {/* 인증 */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/select-role" element={<SelectRolePage />} />
 
-          {/* 시니어 구직자 */}
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/jobs" element={<JobsPage />} />
-          <Route path="/jobs/:id" element={<JobDetailPage />} />
-          <Route path="/my" element={<MyPage />} />
+            {/* 시니어 구직자 */}
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:id" element={<JobDetailPage />} />
+            <Route path="/my" element={<MyPage />} />
 
-          {/* 기업 */}
-          <Route path="/employer/signup" element={<EmployerSignupPage />} />
-          <Route path="/employer/login" element={<EmployerLoginPage />} />
-          <Route path="/employer/post" element={<EmployerPostPage />} />
-          <Route path="/employer/manage" element={<EmployerManagePage />} />
+            {/* 기업 */}
+            <Route path="/employer/signup" element={<EmployerSignupPage />} />
+            <Route path="/employer/login" element={<EmployerLoginPage />} />
+            <Route path="/employer/post" element={<EmployerPostPage />} />
+            <Route path="/employer/manage" element={<EmployerManagePage />} />
 
-          {/* 관리자 */}
-          <Route path="/admin/match" element={<AdminMatchPage />} />
-          <Route path="/admin/notify" element={<AdminNotifyPage />} />
-          <Route path="/admin/employers" element={<AdminEmployerPage />} />
-        </Routes>
+            {/* 관리자 */}
+            <Route path="/admin/match" element={<AdminMatchPage />} />
+            <Route path="/admin/notify" element={<AdminNotifyPage />} />
+            <Route path="/admin/employers" element={<AdminEmployerPage />} />
+          </Routes>
+        </OAuthInterceptor>
       </Router>
     </AuthProvider>
   );
