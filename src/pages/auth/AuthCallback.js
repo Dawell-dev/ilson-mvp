@@ -18,50 +18,44 @@ const AuthCallback = () => {
           return;
         }
 
-        // PKCE 코드를 세션으로 명시적 교환
-        if (code) {
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (exchangeError) {
-            console.error('세션 교환 실패:', exchangeError);
-            navigate('/login');
-            return;
-          }
-
-          const session = data.session;
-          if (!session) {
-            navigate('/login');
-            return;
-          }
-
-          // 사용자 분기
-          const kakaoId = session.user.user_metadata?.provider_id;
-          
-          if (!kakaoId) {
-            navigate('/select-role');
-            return;
-          }
-
-          const { data: worker } = await supabase
-            .from('workers')
-            .select('id')
-            .eq('kakao_id', kakaoId)
-            .maybeSingle();
-
-          if (worker) {
-            navigate('/jobs');
-          } else {
-            navigate('/select-role');
-          }
+        if (!code) {
+          navigate('/login');
           return;
         }
 
-        // code가 없는 경우 (직접 진입)
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          navigate('/select-role');
-        } else {
+        // PKCE 코드를 세션으로 명시적 교환
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (exchangeError) {
+          console.error('세션 교환 실패:', exchangeError);
           navigate('/login');
+          return;
+        }
+
+        const session = data.session;
+        if (!session) {
+          navigate('/login');
+          return;
+        }
+
+        // 사용자 분기
+        const kakaoId = session.user.user_metadata?.provider_id;
+
+        if (!kakaoId) {
+          navigate('/select-role');
+          return;
+        }
+
+        const { data: worker } = await supabase
+          .from('workers')
+          .select('id')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+        if (worker) {
+          navigate('/jobs');
+        } else {
+          navigate('/select-role');
         }
       } catch (error) {
         console.error('콜백 처리 오류:', error);
