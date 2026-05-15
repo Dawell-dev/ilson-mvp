@@ -9,6 +9,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     flowType: 'pkce',
-    detectSessionInUrl: false,  // ← 추가! AuthCallback에서 명시 처리
+    detectSessionInUrl: false,
   },
 });
