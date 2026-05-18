@@ -86,6 +86,8 @@ jobs:
           date_start = (today - timedelta(days=30)).strftime('%Y-%m-%d')
 
           def slack(payload):
+            payload['username']   = 'K-APT봇'
+            payload['icon_emoji'] = ':office:'
             data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
             req  = urllib.request.Request(SLACK, data=data, headers={'Content-Type': 'application/json'})
             urllib.request.urlopen(req)
