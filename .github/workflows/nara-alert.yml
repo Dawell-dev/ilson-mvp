@@ -59,7 +59,7 @@ jobs:
             slack({'blocks': blocks})
         env:
           NARA_API_KEY:      ${{ secrets.NARA_API_KEY }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_AI }}
 
   kapt-alert:
     runs-on: ubuntu-latest
