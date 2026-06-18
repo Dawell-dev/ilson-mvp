@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Banknote, Building2, ChevronRight } from 'lucide-react';
 import { BottomNav } from '../../components/common';
 import { supabase } from '../../lib/supabase';
+import { JOB_TYPES } from '../../constants/jobTypes';
 
 function JobsPage() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
-  const jobTypes = ['전체', '경비', '청소', '주차관리', '시설관리', '미화'];
+  const jobTypes = ['전체', ...JOB_TYPES];
 
   useEffect(() => {
     const loadJobs = async () => {

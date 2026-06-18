@@ -22,10 +22,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { JOB_ICONS } from '../constants/jobTypes';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
 // ─── 데이터 유틸 ───
-const JOB_ICONS = { '경비': '🏢', '청소': '🧹', '주차관리': '🅿️', '시설관리': '🏫', '미화': '🌳', '조리': '🍳' };
 
 function formatJobFromDB(job, index) {
   const icon = JOB_ICONS[job.job_type] || '💼';
