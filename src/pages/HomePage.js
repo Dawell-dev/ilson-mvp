@@ -145,7 +145,7 @@ function extractFullAddress(item) {
 // ─────────────────────────────────────
 // 1) 로그인 화면
 // ─────────────────────────────────────
-function LoginScreen({ onNext }) {
+function LoginScreen({ onNext, onBack }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
@@ -167,6 +167,16 @@ function LoginScreen({ onNext }) {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#F5F0EB' }}>
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-4 left-4 z-10 w-11 h-11 rounded-full flex items-center justify-center bg-white/80 shadow-sm active:scale-90 transition-transform"
+          style={{ color: '#888780', fontSize: '20px' }}
+          aria-label="닫기"
+        >
+          ✕
+        </button>
+      )}
       {/* 상단 로고 + 슬로건 */}
       <div className="flex-1 flex flex-col justify-center items-center px-[30px] pt-[60px] pb-5">
         <div className="mb-7 animate-fade-up">
@@ -187,16 +197,6 @@ function LoginScreen({ onNext }) {
         </div>
         <div className="animate-fade-up animation-delay-100 text-[22px] text-[#212121] font-extrabold text-center leading-snug">
           내 주변 일자리,<br />바로 알려드려요
-        </div>
-        <div className="flex gap-3.5 mt-9 animate-fade-up animation-delay-150 w-full px-4">
-          <div className="flex-1 text-center py-5 rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="text-[28px] font-black tracking-tight" style={{ color: '#E85C1E' }}>1,200+</div>
-            <div className="text-[13px] text-[#888780] font-medium mt-1.5">지금 뽑고 있어요</div>
-          </div>
-          <div className="flex-1 text-center py-5 rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="text-[28px] font-black tracking-tight" style={{ color: '#E85C1E' }}>8,500+</div>
-            <div className="text-[13px] text-[#888780] font-medium mt-1.5">이미 찾았어요</div>
-          </div>
         </div>
       </div>
 
@@ -767,9 +767,10 @@ const deleteCertification = async (id) => {
 // ─────────────────────────────────────
 // 3) 메인 화면
 // ─────────────────────────────────────
-function MainScreen({ region, setRegion, initialTab = 'home' }) {
+function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) {
   const [currentDistance, setCurrentDistance] = useState('3km');
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [showLocationPicker, setShowLocationPicker] = useState(false); // 🆕 위치 변경 모달
   const [profile, setProfile] = useState({
@@ -833,11 +834,13 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
 
     // 초기 세션 체크
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
       hydrateProfile(session);
     });
 
     // 세션 변화 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         hydrateProfile(session);
       }
@@ -944,7 +947,11 @@ function MainScreen({ region, setRegion, initialTab = 'home' }) {
             <button
               key={tab.key}
               className="flex flex-col items-center gap-[2px] bg-transparent border-none py-1.5 px-4 active:scale-90 transition-transform"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => {
+                // 공고(home)는 비로그인도 허용. 나머지는 로그인 필요.
+                if (tab.key !== 'home' && !isLoggedIn) { onRequireLogin(); return; }
+                setActiveTab(tab.key);
+              }}
             >
               <div className="relative">
                 <span className="text-[22px]" style={{ opacity: isActive ? 1 : 0.45 }}>{tab.emoji}</span>
@@ -1906,23 +1913,19 @@ export default function HomePage() {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
 
-  // 카카오 로그인 후 세션 확인
+  // 진입 시 화면 결정. 랜딩 없이 공고(main)로 바로 진입한다.
+  // 로그인은 관심·지원내역·내정보 등 로그인 필요 동작에서 유도한다.
   useEffect(() => {
     // 타임아웃은 느린 네트워크 방어용. 10초로 완화.
-    const timeout = setTimeout(() => setScreen('login'), 10000);
+    const timeout = setTimeout(() => setScreen('main'), 10000);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(() => {
       clearTimeout(timeout);
-      if (session) {
-        // 이미 로그인된 사용자 → 새로고침/재방문 시 바로 메인으로.
-        // LocationScreen은 onAuthStateChange('SIGNED_IN')에서 신규 로그인 직후에만 노출.
-        setScreen('main');
-      } else {
-        setScreen('login');
-      }
+      // 로그인 여부와 무관하게 공고 화면으로 직행 (공고 조회는 비로그인도 가능).
+      setScreen('main');
     }).catch(() => {
       clearTimeout(timeout);
-      setScreen('login');
+      setScreen('main');
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -1930,7 +1933,7 @@ export default function HomePage() {
         // 신규 카카오 로그인 직후 1회만 위치 허용 화면 노출
         setScreen('location');
       } else if (event === 'SIGNED_OUT') {
-        setScreen('login');
+        setScreen('main');
       }
     });
 
@@ -1963,14 +1966,14 @@ export default function HomePage() {
             </div>
           </div>
         )}
-        {screen === 'login' && <LoginScreen onNext={() => setScreen('location')} />}
+        {screen === 'login' && <LoginScreen onNext={() => setScreen('location')} onBack={() => setScreen('main')} />}
         {screen === 'location' && (
           <LocationScreen
             onGranted={(r) => { setRegion(r); setScreen('main'); }}
             onSkip={() => { setRegion('위치 미설정'); setScreen('main'); }}
           />
         )}
-        {screen === 'main' && <MainScreen region={region} setRegion={setRegion} initialTab={tabParam || 'home'} />}
+        {screen === 'main' && <MainScreen region={region} setRegion={setRegion} initialTab={tabParam || 'home'} onRequireLogin={() => setScreen('login')} />}
       </div>
     </div>
   );
