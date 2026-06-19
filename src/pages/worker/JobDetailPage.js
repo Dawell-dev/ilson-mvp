@@ -10,8 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-
-const JOB_ICONS = { '경비': '🏢', '청소': '🧹', '주차관리': '🅿️', '시설관리': '🏫', '미화': '🌳', '조리': '🍳' };
+import { JOB_ICONS } from '../../constants/jobTypes';
 
 function KakaoIcon({ size = 22 }) {
   return (

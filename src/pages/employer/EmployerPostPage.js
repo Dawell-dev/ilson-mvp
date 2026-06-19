@@ -10,8 +10,8 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { JOB_TYPES } from '../../constants/jobTypes';
 
-const JOB_TYPES = ['경비', '청소', '주차관리', '시설관리', '미화', '조리', '기타'];
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
 // 섹션 카드 헬퍼
@@ -55,7 +55,6 @@ function EmployerPostPage() {
   const [formData, setFormData] = useState({
     title: '',
     jobType: '',
-    customJobType: '',
     headcount: '1',
     address: '',
     detailAddress: '',
@@ -132,10 +131,6 @@ function EmployerPostPage() {
         alert('필수 항목을 모두 입력해주세요. (제목, 직종, 주소, 급여)');
         return;
       }
-      if (formData.jobType === '기타' && !formData.customJobType) {
-        alert('기타 직종을 입력해주세요.');
-        return;
-      }
     }
 
     setSubmitting(true);
@@ -173,8 +168,7 @@ function EmployerPostPage() {
       }
 
       // 2. payload 구성
-      const finalJobType =
-        formData.jobType === '기타' ? formData.customJobType : formData.jobType;
+      const finalJobType = formData.jobType;
       const fullAddress = formData.detailAddress
         ? `${formData.address} ${formData.detailAddress}`.trim()
         : formData.address;
@@ -270,15 +264,6 @@ function EmployerPostPage() {
                   </option>
                 ))}
               </select>
-              {formData.jobType === '기타' && (
-                <input
-                  type="text"
-                  value={formData.customJobType}
-                  onChange={(e) => setField('customJobType', e.target.value)}
-                  placeholder="직종을 직접 입력"
-                  className={`${inputBase} mt-2`}
-                />
-              )}
             </Field>
 
             <Field label="채용 인원">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { JOB_TYPES } from '../../constants/jobTypes';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -18,7 +19,6 @@ function RegisterPage() {
     avatarUrl: '',
   });
 
-  const jobTypeOptions = ['경비', '청소', '주차관리', '시설관리', '미화'];
   const timeOptions = ['오전 (6-12시)', '오후 (12-18시)', '야간 (18-06시)', '격일근무'];
 
   // 카카오 로그인 정보 자동 입력
@@ -241,7 +241,7 @@ function RegisterPage() {
           <div className="mb-8">
             <label className={labelStyle}>희망 직종 (복수 선택 가능)</label>
             <div className="grid grid-cols-2 gap-3">
-              {jobTypeOptions.map((type) => (
+              {JOB_TYPES.map((type) => (
                 <button
                   key={type}
                   onClick={() => toggleJobType(type)}
