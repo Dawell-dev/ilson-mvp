@@ -951,7 +951,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
       {/* 스크롤 영역 */}
       <div className="flex-1 overflow-y-auto pb-24 [-webkit-overflow-scrolling:touch]">
         {activeTab === 'home' && (
-          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} />
+          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} />
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
@@ -1001,7 +1001,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
 }
 
 // ─── 리스트 뷰 ───
-function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav }) {
+function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav, listTitle }) {
   return (
     <div>
       {/* 거리 필터 */}
@@ -1024,7 +1024,7 @@ function ListView({ filtered, currentDistance, setCurrentDistance, favorites, to
       {/* 섹션 헤더 */}
       <div className="px-4 pb-3 pt-1 flex justify-between items-center">
         <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>
-          {isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'}
+          {listTitle}
         </h2>
         <span className="text-[13px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>{filtered.length}건</span>
       </div>
