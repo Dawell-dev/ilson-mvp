@@ -54,6 +54,17 @@ function JobsPage() {
     return `${monthlyWage.toLocaleString()}원`;
   };
 
+  // 급여 표시: wage_amount(월/일/시급) 우선, 없으면 기존 hourly_wage 계산
+  const formatWage = (job) => {
+    const amt = job.wage_amount;
+    if (amt) {
+      if (job.wage_type === 'hourly') return `시급 ${Number(amt).toLocaleString()}원`;
+      if (job.wage_type === 'daily') return `일급 ${Number(amt).toLocaleString()}원`;
+      return `월 ${Number(amt).toLocaleString()}원`;
+    }
+    return formatMonthlyWage(job.hourly_wage, job.work_days);
+  };
+
   // 근무시간 포맷팅 (평일/토요일/일요일 구분 + 총 시간)
   const formatWorkSchedule = (workHours, workDays) => {
     if (!workHours) return '협의';
@@ -173,9 +184,9 @@ function JobsPage() {
                   <div className="flex items-center gap-3">
                     <Banknote size={32} className="text-green-600" />
                     <div>
-                      <p className="text-lg text-green-700">월급</p>
+                      <p className="text-lg text-green-700">급여</p>
                       <p className="text-3xl font-bold text-green-600">
-                        {formatMonthlyWage(job.hourly_wage, job.work_days)}
+                        {formatWage(job)}
                       </p>
                     </div>
                   </div>
@@ -184,7 +195,7 @@ function JobsPage() {
                 {/* 회사명 */}
                 <div className="flex items-center gap-3 text-gray-700 mb-3">
                   <Building2 size={28} className="text-gray-500" />
-                  <span className="text-xl font-medium">{job.employers?.company_name}</span>
+                  <span className="text-xl font-medium">{job.employers?.company_name || job.company_name}</span>
                 </div>
 
                 {/* 위치 */}
