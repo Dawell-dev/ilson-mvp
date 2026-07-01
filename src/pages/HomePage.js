@@ -854,7 +854,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const [jobs, setJobs] = useState([]);
   const [jobCoords, setJobCoords] = useState(null);
