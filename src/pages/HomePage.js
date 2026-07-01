@@ -1975,8 +1975,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="flex justify-center min-h-screen bg-[#f0f0ed]">
-      <div className="max-w-app w-full min-h-screen bg-[#FAFAF8] relative overflow-hidden sm:rounded-[32px] sm:shadow-[0_8px_40px_rgba(0,0,0,0.12)] sm:my-5 sm:min-h-[90vh]">
+    <div className="w-full min-h-screen bg-[#FAFAF8] relative overflow-hidden">
         {screen === 'loading' && (
           <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: 'linear-gradient(180deg, #F5F0EB 0%, #FFF5F0 100%)' }}>
             <div className="animate-fade-up">
@@ -2005,6 +2004,5 @@ export default function HomePage() {
         )}
         {screen === 'main' && <MainScreen region={region} setRegion={setRegion} initialTab={tabParam || 'home'} onRequireLogin={() => setScreen('login')} />}
       </div>
-    </div>
   );
 }

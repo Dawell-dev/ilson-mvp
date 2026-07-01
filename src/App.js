@@ -48,7 +48,9 @@ function App() {
     <AuthProvider>
       <Router>
         <OAuthInterceptor>
-          <Routes>
+          <div className="flex justify-center min-h-screen bg-[#f0f0ed]">
+            <div className="max-w-app w-full min-h-screen bg-[#FAFAF8] relative overflow-hidden sm:rounded-[32px] sm:shadow-[0_8px_40px_rgba(0,0,0,0.12)] sm:my-5 sm:min-h-[90vh]">
+              <Routes>
             {/* 메인 */}
             <Route path="/" element={<HomePage />} />
 
@@ -73,6 +75,8 @@ function App() {
             <Route path="/admin/notify" element={<AdminNotifyPage />} />
             <Route path="/admin/employers" element={<AdminEmployerPage />} />
           </Routes>
+            </div>
+          </div>
         </OAuthInterceptor>
       </Router>
     </AuthProvider>
