@@ -148,6 +148,62 @@ function extractFullAddress(item) {
 // ─────────────────────────────────────
 // 1) 로그인 화면
 // ─────────────────────────────────────
+function LandingScreen({ onStart }) {
+  const pins = [[210, 66], [104, 58], [242, 150]];
+  return (
+    <div className="min-h-screen flex flex-col px-6 py-10" style={{ background: 'linear-gradient(180deg, #FFF5F0 0%, #FFFFFF 55%)' }}>
+      <div className="flex-1 flex flex-col justify-center items-center text-center">
+        {/* 워드마크 (임시 로고) */}
+        <div className="text-[26px] font-extrabold mb-7" style={{ color: '#E85C1E' }}>일손</div>
+
+        {/* 지도 + 위치 핀 일러스트 */}
+        <svg viewBox="0 0 320 210" className="w-full max-w-[300px] mb-8" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="mapbg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFE9DC" />
+              <stop offset="1" stopColor="#FFF6F1" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="320" height="210" rx="26" fill="url(#mapbg)" />
+          <path d="M-20,150 Q90,120 170,155 T350,135" stroke="#FBDCCB" strokeWidth="11" fill="none" strokeLinecap="round" />
+          <path d="M70,-20 Q95,90 78,230" stroke="#FBDCCB" strokeWidth="11" fill="none" strokeLinecap="round" />
+          {pins.map(([x, y], i) => (
+            <g key={i} transform={`translate(${x},${y})`}>
+              <path d="M0,-16 C-7,-16 -12,-11 -12,-5 C-12,3 0,14 0,14 C0,14 12,3 12,-5 C12,-11 7,-16 0,-16 Z" fill="#F0A985" />
+              <circle cx="0" cy="-5" r="4.5" fill="#fff" />
+            </g>
+          ))}
+          <circle cx="140" cy="103" r="34" fill="#E85C1E" opacity="0.12" />
+          <circle cx="140" cy="103" r="22" fill="#E85C1E" opacity="0.18" />
+          <g transform="translate(140,93)">
+            <path d="M0,-26 C-11,-26 -20,-17 -20,-7 C-20,6 0,26 0,26 C0,26 20,6 20,-7 C20,-17 11,-26 0,-26 Z" fill="#E85C1E" />
+            <circle cx="0" cy="-7" r="8" fill="#fff" />
+          </g>
+        </svg>
+
+        {/* 헤드 */}
+        <h1 className="text-[30px] font-extrabold text-[#1A1A18] leading-tight">
+          집 근처 일자리를<br />카톡으로 받으세요
+        </h1>
+      </div>
+
+      {/* CTA */}
+      <div className="pt-4">
+        <button
+          onClick={onStart}
+          className="w-full text-white text-[19px] font-bold py-4 rounded-2xl active:scale-[0.98] transition-transform"
+          style={{ background: '#E85C1E' }}
+        >
+          눌러서 시작하기
+        </button>
+        <p className="text-center text-[14px] text-[#B4B2A9] mt-4">
+          청소·미화 · 경비·주차 · 시설관리
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function LoginScreen({ onNext, onBack }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -1943,19 +1999,21 @@ export default function HomePage() {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
 
-  // 진입 시 화면 결정. 랜딩 없이 공고(main)로 바로 진입한다.
+  // 진입 시 화면 결정. 첫 방문은 랜딩, 재방문은 공고(main)로 진입.
   // 로그인은 관심·지원내역·내정보 등 로그인 필요 동작에서 유도한다.
   useEffect(() => {
+    const seen = (() => {
+      try { return !!localStorage.getItem('ilson_onboarded'); } catch { return false; }
+    })();
     // 타임아웃은 느린 네트워크 방어용. 10초로 완화.
-    const timeout = setTimeout(() => setScreen('main'), 10000);
+    const timeout = setTimeout(() => setScreen(seen ? 'main' : 'landing'), 10000);
 
     supabase.auth.getSession().then(() => {
       clearTimeout(timeout);
-      // 로그인 여부와 무관하게 공고 화면으로 직행 (공고 조회는 비로그인도 가능).
-      setScreen('main');
+      setScreen(seen ? 'main' : 'landing');
     }).catch(() => {
       clearTimeout(timeout);
-      setScreen('main');
+      setScreen(seen ? 'main' : 'landing');
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -1994,6 +2052,14 @@ export default function HomePage() {
               <div className="w-8 h-8 border-[3px] rounded-full animate-spin" style={{ borderColor: 'rgba(232,92,30,0.15)', borderTopColor: '#E85C1E' }} />
             </div>
           </div>
+        )}
+        {screen === 'landing' && (
+          <LandingScreen
+            onStart={() => {
+              try { localStorage.setItem('ilson_onboarded', '1'); } catch (e) {}
+              setScreen('main');
+            }}
+          />
         )}
         {screen === 'login' && <LoginScreen onNext={() => setScreen('location')} onBack={() => setScreen('main')} />}
         {screen === 'location' && (
