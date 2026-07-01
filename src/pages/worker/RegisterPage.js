@@ -227,7 +227,7 @@ function RegisterPage() {
     return (
       <div className="min-h-screen" style={{ background: '#F5F0EB' }}>
         <div className="px-6 py-8" style={{ background: '#E85C1E' }}>
-          <h1 className="text-[28px] font-bold text-white">희망 조건</h1>
+          <h1 className="text-[28px] font-bold text-white">희망 직종과 시간</h1>
           <p className="text-[16px] text-white/80 mt-1">원하는 일자리를 알려주세요</p>
         </div>
 
