@@ -1,17 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Banknote, Building2, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, Banknote, Building2, ChevronRight, Footprints } from 'lucide-react';
 import { BottomNav } from '../../components/common';
 import { supabase } from '../../lib/supabase';
 import { JOB_TYPES } from '../../constants/jobTypes';
+import { haversine, formatDistance, walkMinutes } from '../../lib/distance';
 
 function JobsPage() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [coords, setCoords] = useState(null);
 
   const jobTypes = ['전체', ...JOB_TYPES];
+
+  // 사용자 위치 1회 획득 (거부/실패 시 거리 없이 최신순)
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { timeout: 5000 }
+    );
+  }, []);
+
+  // 위치가 있으면 거리 계산 후 가까운 순 정렬
+  const displayJobs = useMemo(() => {
+    if (!coords) return jobs;
+    return jobs
+      .map((j) => ({
+        ...j,
+        _distance:
+          j.lat != null && j.lng != null
+            ? haversine(coords.lat, coords.lng, j.lat, j.lng)
+            : null,
+      }))
+      .sort((a, b) => (a._distance ?? Infinity) - (b._distance ?? Infinity));
+  }, [jobs, coords]);
 
   useEffect(() => {
     const loadJobs = async () => {
@@ -163,12 +189,22 @@ function JobsPage() {
           </div>
         ) : (
           <div className="space-y-5">
-            {jobs.map((job) => (
+            {displayJobs.map((job) => (
               <div
                 key={job.id}
                 onClick={() => navigate(`/jobs/${job.id}`)}
                 className="bg-white rounded-3xl p-6 shadow-md border-2 border-gray-200 cursor-pointer active:bg-gray-50 transition-all"
               >
+                {/* 거리 - 위치 있을 때 최상단 강조 */}
+                {job._distance != null && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <Footprints size={26} className="text-orange-500" />
+                    <span className="text-xl font-bold text-orange-600">
+                      {formatDistance(job._distance)} · 걸어서 {walkMinutes(job._distance)}분
+                    </span>
+                  </div>
+                )}
+
                 {/* 직종 태그 - 크게 */}
                 <span className="inline-block bg-orange-100 text-orange-600 text-xl font-bold px-4 py-2 rounded-full mb-4">
                   {job.job_type}
