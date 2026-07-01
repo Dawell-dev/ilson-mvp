@@ -15,11 +15,9 @@ function JobsPage() {
 
   const jobTypes = ['전체', ...JOB_TYPES];
 
-  // 수원 시청 기준 좌표 (위치 미허용/실패 시 fallback)
-  const FALLBACK_COORDS = { lat: 37.263573, lng: 127.028601 };
-
-  // 사용자 위치 1회 획득 (거부/실패/미지원 시 fallback 좌표 사용)
+  // 사용자 위치 1회 획득 (거부/실패/미지원 시 수원 시청 fallback)
   useEffect(() => {
+    const FALLBACK_COORDS = { lat: 37.263573, lng: 127.028601 };
     if (!navigator.geolocation) {
       setCoords(FALLBACK_COORDS);
       return;
