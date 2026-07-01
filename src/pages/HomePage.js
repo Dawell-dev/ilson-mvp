@@ -771,6 +771,7 @@ const deleteCertification = async (id) => {
 // 3) 메인 화면
 // ─────────────────────────────────────
 function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) {
+  const navigate = useNavigate();
   const [currentDistance, setCurrentDistance] = useState('3km');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -832,6 +833,9 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
 
         const loadedCerts = await loadCertifications(worker.id);
         setCertifications(loadedCerts);
+      } else {
+        // 로그인했지만 프로필 미등록(신규) → 온보딩으로 유도
+        navigate('/register');
       }
     };
 

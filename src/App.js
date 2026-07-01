@@ -3,9 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import { AuthProvider } from './context/AuthContext';
 
 // 인증 페이지
-import LoginPage from './pages/auth/LoginPage';
 import AuthCallback from './pages/auth/AuthCallback';
-import SelectRolePage from './pages/auth/SelectRolePage';
 
 // 페이지
 import HomePage from './pages/HomePage';
@@ -54,9 +52,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
 
             {/* 인증 */}
-            <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/select-role" element={<SelectRolePage />} />
 
             {/* 시니어 구직자 */}
             <Route path="/register" element={<RegisterPage />} />
