@@ -46,6 +46,7 @@ function formatJobFromDB(job, coords) {
 
   return {
     id: job.id,
+    jobType: job.job_type,
     icon,
     title: job.title,
     location: job.address,
@@ -890,7 +891,12 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
   }, [jobCoords]);
 
   const toggleFav = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
-  const filtered = getFiltered(jobs, currentDistance);
+  // 프로필에 희망 직종이 있으면 그 직종만(맞춤), 없으면 전체
+  const matched = (profile.jobs && profile.jobs.length)
+    ? jobs.filter((j) => profile.jobs.includes(j.jobType))
+    : jobs;
+  const filtered = getFiltered(matched, currentDistance);
+  const isPersonalized = !!(profile.jobs && profile.jobs.length);
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#F7F5F2' }}>
@@ -1017,7 +1023,9 @@ function ListView({ filtered, currentDistance, setCurrentDistance, favorites, to
 
       {/* 섹션 헤더 */}
       <div className="px-4 pb-3 pt-1 flex justify-between items-center">
-        <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>가까운 일자리</h2>
+        <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>
+          {isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'}
+        </h2>
         <span className="text-[13px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>{filtered.length}건</span>
       </div>
 
