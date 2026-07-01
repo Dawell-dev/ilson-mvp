@@ -920,7 +920,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
           </div>
           <span className="text-[18px] font-extrabold tracking-tight"><span style={{ color: '#E85C1E' }}>일</span><span style={{ color: '#1A1A18' }}>손</span></span>
         </div>
-        <button className="w-[36px] h-[36px] rounded-full flex items-center justify-center relative active:scale-95 transition-transform" style={{ background: '#FFF5F0', border: '1.5px solid #FDDCCC' }}>
+        <button onClick={() => navigate('/notifications')} className="w-[36px] h-[36px] rounded-full flex items-center justify-center relative active:scale-95 transition-transform" style={{ background: '#FFF5F0', border: '1.5px solid #FDDCCC' }}>
           <span style={{ color: '#E85C1E', fontSize: '17px' }}>🔔</span>
           <div className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full" style={{ background: '#E85C1E', border: '2px solid white' }} />
         </button>

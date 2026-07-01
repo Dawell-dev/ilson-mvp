@@ -12,6 +12,7 @@ import HomePage from './pages/HomePage';
 import RegisterPage from './pages/worker/RegisterPage';
 import JobsPage from './pages/worker/JobsPage';
 import JobDetailPage from './pages/worker/JobDetailPage';
+import NotificationsPage from './pages/worker/NotificationsPage';
 import MyPage from './pages/worker/MyPage';
 
 // 기업용 페이지
@@ -58,6 +59,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/jobs/:id" element={<JobDetailPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/my" element={<MyPage />} />
 
             {/* 기업 */}
