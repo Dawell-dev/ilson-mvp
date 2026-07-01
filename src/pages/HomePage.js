@@ -939,7 +939,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
             </div>
             <div className="text-left">
               <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>
-                {region || '위치 미설정'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span>
+                {region || '경기도 수원시 팔달구'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span>
               </div>
               <div className="text-[11px] font-medium mt-px" style={{ color: '#888780' }}>
                 {region && region !== '위치 미설정' ? '눌러서 위치 변경' : '눌러서 위치 설정'}
