@@ -102,7 +102,7 @@ function getFiltered(jobs, distance) {
 }
 
 // 🆕 Nominatim 결과 → 한국식 풀 주소 ("시/도 + 구/군 + 동/읍/면")
-// 예) "서울특별시 강남구 삼성동", "경기도 남양주시 화도읍"
+// 예) "서울특별시 강남구 삼성동", "경기도 수원시 팔달구"
 function extractFullAddress(item) {
   const addr = item.address || {};
 
@@ -315,32 +315,32 @@ function LocationScreen({ onGranted, onSkip }) {
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
             );
             const data = await res.json();
-            // 🆕 풀 주소로 저장 (예: "경기도 남양주시 화도읍")
+            // 🆕 풀 주소로 저장 (예: "경기도 수원시 팔달구")
             const name = extractFullAddress(data) || '내 동네';
             setRegionName(name);
             setLoading(false);
             setDone(true);
             setTimeout(() => onGranted(name), 800);
           } catch {
-            setRegionName('경기도 남양주시 화도읍');
+            setRegionName('경기도 수원시 팔달구');
             setLoading(false);
             setDone(true);
-            setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
+            setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
           }
         },
         () => {
-          setRegionName('경기도 남양주시 화도읍');
+          setRegionName('경기도 수원시 팔달구');
           setLoading(false);
           setDone(true);
-          setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
+          setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
         },
         { timeout: 8000 }
       );
     } else {
-      setRegionName('경기도 남양주시 화도읍');
+      setRegionName('경기도 수원시 팔달구');
       setLoading(false);
       setDone(true);
-      setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
+      setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
     }
   };
 
