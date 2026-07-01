@@ -23,11 +23,12 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { JOB_ICONS } from '../constants/jobTypes';
+import { haversine, formatDistance, walkMinutes } from '../lib/distance';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
 // ─── 데이터 유틸 ───
 
-function formatJobFromDB(job, index) {
+function formatJobFromDB(job, coords) {
   const icon = JOB_ICONS[job.job_type] || '💼';
   // wage_type/wage_amount 우선, 기존 hourly_wage는 fallback
   const wageAmount = job.wage_amount ?? job.hourly_wage;
@@ -40,7 +41,8 @@ function formatJobFromDB(job, index) {
   const createdAt = new Date(job.created_at);
   const now = new Date();
   const isNew = (now - createdAt) < 3 * 24 * 60 * 60 * 1000; // 3일 이내
-  const dist = 0.5 + index * 0.7; // 임시 거리 (위치 기반 추후 구현)
+  const hasCoord = coords && job.lat != null && job.lng != null;
+  const dist = hasCoord ? haversine(coords.lat, coords.lng, job.lat, job.lng) : null;
 
   return {
     id: job.id,
@@ -49,11 +51,11 @@ function formatJobFromDB(job, index) {
     location: job.address,
     pay: wage,
     tags,
-    company: job.employers?.company_name || '',
+    company: job.employers?.company_name || job.company_name || '',
     isNew,
-    distance: dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`,
-    dist,
-    walkTime: `${Math.round(dist * 15)}분`,
+    distance: dist != null ? formatDistance(dist) : null,
+    dist: dist ?? Infinity,
+    walkTime: dist != null ? `${walkMinutes(dist)}분` : '',
   };
 }
 
@@ -850,9 +852,22 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
   }, []);
 
   const [jobs, setJobs] = useState([]);
+  const [jobCoords, setJobCoords] = useState(null);
 
-  // DB에서 일자리 가져오기
+  // 거리 계산용 사용자 위치 1회 획득 (미허용/실패 시 수원 시청 fallback)
   useEffect(() => {
+    const FALLBACK = { lat: 37.263573, lng: 127.028601 };
+    if (!navigator.geolocation) { setJobCoords(FALLBACK); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setJobCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setJobCoords(FALLBACK),
+      { timeout: 5000 }
+    );
+  }, []);
+
+  // DB에서 일자리 가져오기 (위치 확보 후 거리 계산 + 가까운순 정렬)
+  useEffect(() => {
+    if (!jobCoords) return;
     const loadJobs = async () => {
       try {
         const { data, error } = await supabase
@@ -862,14 +877,17 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          setJobs(data.map((job, i) => formatJobFromDB(job, i)));
+          const mapped = data
+            .map((job) => formatJobFromDB(job, jobCoords))
+            .sort((a, b) => a.dist - b.dist);
+          setJobs(mapped);
         }
       } catch (e) {
         console.error('일자리 로딩 오류:', e);
       }
     };
     loadJobs();
-  }, []);
+  }, [jobCoords]);
 
   const toggleFav = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
   const filtered = getFiltered(jobs, currentDistance);
