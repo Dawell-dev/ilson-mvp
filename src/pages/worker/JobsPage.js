@@ -1,17 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Banknote, Building2, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, Banknote, Building2, ChevronRight, Footprints } from 'lucide-react';
 import { BottomNav } from '../../components/common';
 import { supabase } from '../../lib/supabase';
 import { JOB_TYPES } from '../../constants/jobTypes';
+import { haversine, formatDistance, walkMinutes } from '../../lib/distance';
 
 function JobsPage() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [coords, setCoords] = useState(null);
 
   const jobTypes = ['전체', ...JOB_TYPES];
+
+  // 사용자 위치 1회 획득 (거부/실패/미지원 시 수원 시청 fallback)
+  useEffect(() => {
+    const FALLBACK_COORDS = { lat: 37.263573, lng: 127.028601 };
+    if (!navigator.geolocation) {
+      setCoords(FALLBACK_COORDS);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setCoords(FALLBACK_COORDS),
+      { timeout: 5000 }
+    );
+  }, []);
+
+  // 위치가 있으면 거리 계산 후 가까운 순 정렬
+  const displayJobs = useMemo(() => {
+    if (!coords) return jobs;
+    return jobs
+      .map((j) => ({
+        ...j,
+        _distance:
+          j.lat != null && j.lng != null
+            ? haversine(coords.lat, coords.lng, j.lat, j.lng)
+            : null,
+      }))
+      .sort((a, b) => (a._distance ?? Infinity) - (b._distance ?? Infinity));
+  }, [jobs, coords]);
 
   useEffect(() => {
     const loadJobs = async () => {
@@ -52,6 +82,17 @@ function JobsPage() {
     const weeklyHours = workDays === '주6일' ? 36 : 40;
     const monthlyWage = Math.round(hourlyWage * weeklyHours * 4.345);
     return `${monthlyWage.toLocaleString()}원`;
+  };
+
+  // 급여 표시: wage_amount(월/일/시급) 우선, 없으면 기존 hourly_wage 계산
+  const formatWage = (job) => {
+    const amt = job.wage_amount;
+    if (amt) {
+      if (job.wage_type === 'hourly') return `시급 ${Number(amt).toLocaleString()}원`;
+      if (job.wage_type === 'daily') return `일급 ${Number(amt).toLocaleString()}원`;
+      return `월 ${Number(amt).toLocaleString()}원`;
+    }
+    return formatMonthlyWage(job.hourly_wage, job.work_days);
   };
 
   // 근무시간 포맷팅 (평일/토요일/일요일 구분 + 총 시간)
@@ -152,12 +193,22 @@ function JobsPage() {
           </div>
         ) : (
           <div className="space-y-5">
-            {jobs.map((job) => (
+            {displayJobs.map((job) => (
               <div
                 key={job.id}
                 onClick={() => navigate(`/jobs/${job.id}`)}
                 className="bg-white rounded-3xl p-6 shadow-md border-2 border-gray-200 cursor-pointer active:bg-gray-50 transition-all"
               >
+                {/* 거리 - 위치 있을 때 최상단 강조 */}
+                {job._distance != null && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <Footprints size={26} className="text-orange-500" />
+                    <span className="text-xl font-bold text-orange-600">
+                      {formatDistance(job._distance)} · 걸어서 {walkMinutes(job._distance)}분
+                    </span>
+                  </div>
+                )}
+
                 {/* 직종 태그 - 크게 */}
                 <span className="inline-block bg-orange-100 text-orange-600 text-xl font-bold px-4 py-2 rounded-full mb-4">
                   {job.job_type}
@@ -173,9 +224,9 @@ function JobsPage() {
                   <div className="flex items-center gap-3">
                     <Banknote size={32} className="text-green-600" />
                     <div>
-                      <p className="text-lg text-green-700">월급</p>
+                      <p className="text-lg text-green-700">급여</p>
                       <p className="text-3xl font-bold text-green-600">
-                        {formatMonthlyWage(job.hourly_wage, job.work_days)}
+                        {formatWage(job)}
                       </p>
                     </div>
                   </div>
@@ -184,7 +235,7 @@ function JobsPage() {
                 {/* 회사명 */}
                 <div className="flex items-center gap-3 text-gray-700 mb-3">
                   <Building2 size={28} className="text-gray-500" />
-                  <span className="text-xl font-medium">{job.employers?.company_name}</span>
+                  <span className="text-xl font-medium">{job.employers?.company_name || job.company_name}</span>
                 </div>
 
                 {/* 위치 */}

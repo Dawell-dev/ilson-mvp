@@ -23,11 +23,12 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { JOB_ICONS } from '../constants/jobTypes';
+import { haversine, formatDistance, walkMinutes } from '../lib/distance';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
 // ─── 데이터 유틸 ───
 
-function formatJobFromDB(job, index) {
+function formatJobFromDB(job, coords) {
   const icon = JOB_ICONS[job.job_type] || '💼';
   // wage_type/wage_amount 우선, 기존 hourly_wage는 fallback
   const wageAmount = job.wage_amount ?? job.hourly_wage;
@@ -40,20 +41,22 @@ function formatJobFromDB(job, index) {
   const createdAt = new Date(job.created_at);
   const now = new Date();
   const isNew = (now - createdAt) < 3 * 24 * 60 * 60 * 1000; // 3일 이내
-  const dist = 0.5 + index * 0.7; // 임시 거리 (위치 기반 추후 구현)
+  const hasCoord = coords && job.lat != null && job.lng != null;
+  const dist = hasCoord ? haversine(coords.lat, coords.lng, job.lat, job.lng) : null;
 
   return {
     id: job.id,
+    jobType: job.job_type,
     icon,
     title: job.title,
     location: job.address,
     pay: wage,
     tags,
-    company: job.employers?.company_name || '',
+    company: job.employers?.company_name || job.company_name || '',
     isNew,
-    distance: dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`,
-    dist,
-    walkTime: `${Math.round(dist * 15)}분`,
+    distance: dist != null ? formatDistance(dist) : null,
+    dist: dist ?? Infinity,
+    walkTime: dist != null ? `${walkMinutes(dist)}분` : '',
   };
 }
 
@@ -99,7 +102,7 @@ function getFiltered(jobs, distance) {
 }
 
 // 🆕 Nominatim 결과 → 한국식 풀 주소 ("시/도 + 구/군 + 동/읍/면")
-// 예) "서울특별시 강남구 삼성동", "경기도 남양주시 화도읍"
+// 예) "서울특별시 강남구 삼성동", "경기도 수원시 팔달구"
 function extractFullAddress(item) {
   const addr = item.address || {};
 
@@ -312,32 +315,32 @@ function LocationScreen({ onGranted, onSkip }) {
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
             );
             const data = await res.json();
-            // 🆕 풀 주소로 저장 (예: "경기도 남양주시 화도읍")
+            // 🆕 풀 주소로 저장 (예: "경기도 수원시 팔달구")
             const name = extractFullAddress(data) || '내 동네';
             setRegionName(name);
             setLoading(false);
             setDone(true);
             setTimeout(() => onGranted(name), 800);
           } catch {
-            setRegionName('경기도 남양주시 화도읍');
+            setRegionName('경기도 수원시 팔달구');
             setLoading(false);
             setDone(true);
-            setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
+            setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
           }
         },
         () => {
-          setRegionName('경기도 남양주시 화도읍');
+          setRegionName('경기도 수원시 팔달구');
           setLoading(false);
           setDone(true);
-          setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
+          setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
         },
         { timeout: 8000 }
       );
     } else {
-      setRegionName('경기도 남양주시 화도읍');
+      setRegionName('경기도 수원시 팔달구');
       setLoading(false);
       setDone(true);
-      setTimeout(() => onGranted('경기도 남양주시 화도읍'), 800);
+      setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
     }
   };
 
@@ -850,9 +853,22 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
   }, []);
 
   const [jobs, setJobs] = useState([]);
+  const [jobCoords, setJobCoords] = useState(null);
 
-  // DB에서 일자리 가져오기
+  // 거리 계산용 사용자 위치 1회 획득 (미허용/실패 시 수원 시청 fallback)
   useEffect(() => {
+    const FALLBACK = { lat: 37.263573, lng: 127.028601 };
+    if (!navigator.geolocation) { setJobCoords(FALLBACK); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setJobCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setJobCoords(FALLBACK),
+      { timeout: 5000 }
+    );
+  }, []);
+
+  // DB에서 일자리 가져오기 (위치 확보 후 거리 계산 + 가까운순 정렬)
+  useEffect(() => {
+    if (!jobCoords) return;
     const loadJobs = async () => {
       try {
         const { data, error } = await supabase
@@ -862,17 +878,25 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          setJobs(data.map((job, i) => formatJobFromDB(job, i)));
+          const mapped = data
+            .map((job) => formatJobFromDB(job, jobCoords))
+            .sort((a, b) => a.dist - b.dist);
+          setJobs(mapped);
         }
       } catch (e) {
         console.error('일자리 로딩 오류:', e);
       }
     };
     loadJobs();
-  }, []);
+  }, [jobCoords]);
 
   const toggleFav = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
-  const filtered = getFiltered(jobs, currentDistance);
+  // 프로필에 희망 직종이 있으면 그 직종만(맞춤), 없으면 전체
+  const matched = (profile.jobs && profile.jobs.length)
+    ? jobs.filter((j) => profile.jobs.includes(j.jobType))
+    : jobs;
+  const filtered = getFiltered(matched, currentDistance);
+  const isPersonalized = !!(profile.jobs && profile.jobs.length);
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#F7F5F2' }}>
@@ -927,7 +951,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
       {/* 스크롤 영역 */}
       <div className="flex-1 overflow-y-auto pb-24 [-webkit-overflow-scrolling:touch]">
         {activeTab === 'home' && (
-          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} />
+          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} />
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
@@ -977,7 +1001,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
 }
 
 // ─── 리스트 뷰 ───
-function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav }) {
+function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav, listTitle }) {
   return (
     <div>
       {/* 거리 필터 */}
@@ -999,7 +1023,9 @@ function ListView({ filtered, currentDistance, setCurrentDistance, favorites, to
 
       {/* 섹션 헤더 */}
       <div className="px-4 pb-3 pt-1 flex justify-between items-center">
-        <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>가까운 일자리</h2>
+        <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>
+          {listTitle}
+        </h2>
         <span className="text-[13px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>{filtered.length}건</span>
       </div>
 
