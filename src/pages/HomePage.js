@@ -64,7 +64,6 @@ function formatJobFromDB(job, coords) {
 }
 
 
-const DISTANCES = ['5km', '10km', '20km', '전체'];
 
 // ─── 공통 SVG ───
 function KakaoIcon({ size = 22 }) {
@@ -831,7 +830,7 @@ const deleteCertification = async (id) => {
 // ─────────────────────────────────────
 function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) {
   const navigate = useNavigate();
-  const [currentDistance, setCurrentDistance] = useState('10km');
+  const [currentDistance] = useState('10km');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [favorites, setFavorites] = useState([]);
@@ -1005,8 +1004,8 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
               </div>
             </div>
           </button>
-          <div className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#E8F5E9', color: '#2E7D32' }}>
-            실시간
+          <div className="text-[12px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
+            {currentDistance} 이내
           </div>
         </div>
       )}
@@ -1014,7 +1013,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
       {/* 스크롤 영역 */}
       <div className="flex-1 overflow-y-auto pb-24 [-webkit-overflow-scrolling:touch]">
         {activeTab === 'home' && (
-          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} />
+          <ListView filtered={filtered} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} isPersonalized={isPersonalized} onRequireLogin={onRequireLogin} />
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
@@ -1064,26 +1063,9 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
 }
 
 // ─── 리스트 뷰 ───
-function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav, listTitle }) {
+function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, onRequireLogin }) {
   return (
     <div>
-      {/* 거리 필터 */}
-      <div className="px-4 pb-3 pt-3 flex gap-2 overflow-x-auto">
-        {DISTANCES.filter(d => d !== '전체').map((d) => (
-          <button
-            key={d}
-            className="py-2.5 px-5 rounded-full text-[14px] font-bold whitespace-nowrap transition-all active:scale-95"
-            style={currentDistance === d
-              ? { background: '#E85C1E', border: '1.5px solid #E85C1E', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(232,92,30,0.25)' }
-              : { background: '#FFFFFF', border: '1.5px solid #EDE8E2', color: '#888780' }
-            }
-            onClick={() => setCurrentDistance(d)}
-          >
-            {d} 이내
-          </button>
-        ))}
-      </div>
-
       {/* 섹션 헤더 */}
       <div className="px-4 pb-3 pt-1 flex justify-between items-center">
         <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>
@@ -1096,9 +1078,30 @@ function ListView({ filtered, currentDistance, setCurrentDistance, favorites, to
       <div className="pb-5">
         <div className="flex flex-col gap-3.5 px-4">
           {filtered.length > 0 ? (
-            filtered.map((job, i) => (
-              <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
-            ))
+            isPersonalized ? (
+              filtered.map((job, i) => (
+                <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
+              ))
+            ) : (
+              <>
+                <JobCard key={filtered[0].id} job={filtered[0]} index={0} isFav={favorites.includes(filtered[0].id)} toggleFav={toggleFav} />
+                {filtered.length > 1 && (
+                  <div className="relative overflow-hidden" style={{ maxHeight: '76px' }} aria-hidden="true">
+                    <div className="pointer-events-none select-none">
+                      <JobCard job={filtered[1]} index={1} isFav={false} toggleFav={() => {}} />
+                    </div>
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(250,250,248,0) 25%, #FAFAF8 100%)' }} />
+                  </div>
+                )}
+                <div className="text-center bg-white rounded-2xl px-5 py-5 border border-[#F0E9E2] shadow-md">
+                  <div className="text-[17px] font-extrabold text-[#1A1A18] mb-1">내게 맞는 일자리 더 보기</div>
+                  <div className="text-[14px] text-[#7A756C] mb-4 leading-relaxed">동네와 직종을 설정하면<br />딱 맞는 일자리만 모아서 보여드려요</div>
+                  <button onClick={onRequireLogin} className="w-full py-3.5 rounded-xl text-[16px] font-bold text-white border-none" style={{ background: '#E85C1E' }}>
+                    설정하고 더 보기
+                  </button>
+                </div>
+              </>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center py-16 animate-fade-up">
               <div className="text-[52px] mb-4">🔍</div>
