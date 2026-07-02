@@ -57,6 +57,9 @@ function formatJobFromDB(job, coords) {
     distance: dist != null ? formatDistance(dist) : null,
     dist: dist ?? Infinity,
     walkTime: dist != null ? `${walkMinutes(dist)}분` : '',
+    source: job.source || null,
+    phone: job.contact_phone || null,
+    sourceUrl: job.source_url || null,
   };
 }
 
@@ -1172,14 +1175,31 @@ function JobCard({ job, index, isFav, toggleFav }) {
         </div>
       )}
 
-      {/* 버튼 */}
-      <div className="mt-3.5 flex gap-2">
-        <button className="flex-1 h-[50px] text-white border-none rounded-[14px] text-[16px] font-bold active:scale-[0.97] transition-transform shadow-sm" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
-          바로 지원하기
-        </button>
-        <button className="w-[50px] h-[50px] border-none rounded-[14px] flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform shadow-sm" style={{ background: '#FEE500' }}>
-          <KakaoIcon size={20} />
-        </button>
+      {/* 버튼 - 연락처 있으면 전화, 없으면(공공) 원문 보기 */}
+      <div className="mt-3.5">
+        {job.phone ? (
+          <a
+            href={`tel:${job.phone}`}
+            className="flex items-center justify-center w-full h-[50px] text-white border-none rounded-[14px] text-[16px] font-bold active:scale-[0.97] transition-transform shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}
+          >
+            전화로 지원하기
+          </a>
+        ) : job.sourceUrl ? (
+          <a
+            href={job.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-full h-[50px] border rounded-[14px] text-[16px] font-bold active:scale-[0.97] transition-transform"
+            style={{ borderColor: '#E85C1E', color: '#E85C1E', background: '#FFF8F5' }}
+          >
+            원문에서 지원하기
+          </a>
+        ) : (
+          <div className="flex items-center justify-center w-full h-[50px] rounded-[14px] text-[15px] font-medium" style={{ background: '#F7F5F2', color: '#888780' }}>
+            지원 정보 준비 중
+          </div>
+        )}
       </div>
     </div>
   );
