@@ -1093,9 +1093,9 @@ function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, o
                     <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(250,250,248,0) 25%, #FAFAF8 100%)' }} />
                   </div>
                 )}
-                <div className="text-center bg-white rounded-2xl px-5 py-5 border border-[#F0E9E2] shadow-md">
-                  <div className="text-[17px] font-extrabold text-[#1A1A18] mb-1">내게 맞는 일자리 더 보기</div>
-                  <div className="text-[14px] text-[#7A756C] mb-4 leading-relaxed">동네와 직종을 설정하면<br />딱 맞는 일자리만 모아서 보여드려요</div>
+                <div className="text-center rounded-2xl px-5 py-5" style={{ background: '#FFF5F0', border: '1.5px solid #F5C4A8' }}>
+                  <div className="text-[17px] font-extrabold mb-1" style={{ color: '#B84A15' }}>내게 맞는 일자리 더 보기</div>
+                  <div className="text-[14px] mb-4 leading-relaxed" style={{ color: '#9A6A4E' }}>동네와 직종을 설정하면<br />딱 맞는 일자리만 모아서 보여드려요</div>
                   <button onClick={onRequireLogin} className="w-full py-3.5 rounded-xl text-[16px] font-bold text-white border-none" style={{ background: '#E85C1E' }}>
                     설정하고 더 보기
                   </button>
