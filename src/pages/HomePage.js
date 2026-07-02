@@ -1014,7 +1014,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
       {/* 스크롤 영역 */}
       <div className="flex-1 overflow-y-auto pb-24 [-webkit-overflow-scrolling:touch]">
         {activeTab === 'home' && (
-          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} />
+          <ListView filtered={filtered} currentDistance={currentDistance} setCurrentDistance={setCurrentDistance} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} isPersonalized={isPersonalized} onRequireLogin={onRequireLogin} />
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
@@ -1064,7 +1064,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
 }
 
 // ─── 리스트 뷰 ───
-function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav, listTitle }) {
+function ListView({ filtered, currentDistance, setCurrentDistance, favorites, toggleFav, listTitle, isPersonalized, onRequireLogin }) {
   return (
     <div>
       {/* 거리 필터 */}
@@ -1096,9 +1096,33 @@ function ListView({ filtered, currentDistance, setCurrentDistance, favorites, to
       <div className="pb-5">
         <div className="flex flex-col gap-3.5 px-4">
           {filtered.length > 0 ? (
-            filtered.map((job, i) => (
-              <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
-            ))
+            isPersonalized ? (
+              filtered.map((job, i) => (
+                <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
+              ))
+            ) : (
+              <>
+                {filtered.slice(0, 2).map((job, i) => (
+                  <JobCard key={job.id} job={job} index={i} isFav={favorites.includes(job.id)} toggleFav={toggleFav} />
+                ))}
+                {filtered.length > 2 && (
+                  <div className="relative">
+                    <div className="pointer-events-none select-none" style={{ filter: 'blur(4px)', opacity: 0.55 }} aria-hidden="true">
+                      <JobCard job={filtered[2]} index={2} isFav={false} toggleFav={() => {}} />
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center px-2">
+                      <div className="text-center bg-white rounded-2xl px-5 py-5 border border-[#F0E9E2] shadow-md w-full">
+                        <div className="text-[17px] font-extrabold text-[#1A1A18] mb-1">내게 맞는 일자리 더 보기</div>
+                        <div className="text-[14px] text-[#7A756C] mb-4 leading-relaxed">동네와 직종을 설정하면<br />딱 맞는 일자리만 모아서 보여드려요</div>
+                        <button onClick={onRequireLogin} className="w-full py-3.5 rounded-xl text-[16px] font-bold text-white border-none" style={{ background: '#E85C1E' }}>
+                          설정하고 더 보기
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center py-16 animate-fade-up">
               <div className="text-[52px] mb-4">🔍</div>
