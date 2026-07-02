@@ -91,12 +91,6 @@ function AppIcon() {
 }
 
 // ─── 유틸 ───
-function formatPhone(e) {
-  let v = e.target.value.replace(/[^0-9]/g, '');
-  if (v.length > 3 && v.length <= 7) v = v.slice(0, 3) + '-' + v.slice(3);
-  else if (v.length > 7) v = v.slice(0, 3) + '-' + v.slice(3, 7) + '-' + v.slice(7, 11);
-  e.target.value = v;
-}
 
 function getFiltered(jobs, distance) {
   const max = distance === '5km' ? 5 : distance === '10km' ? 10 : distance === '20km' ? 20 : 999;
@@ -209,7 +203,6 @@ function LandingScreen({ onStart }) {
 function LoginScreen({ onNext, onBack }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [showPhone, setShowPhone] = useState(false);
 
   const handleKakao = async () => {
     setLoading(true);
@@ -251,12 +244,7 @@ function LoginScreen({ onNext, onBack }) {
             </div>
           </div>
         </div>
-        <div className="animate-fade-up animation-delay-100 mt-1 mb-3">
-          <span className="inline-block text-[14px] font-medium rounded-full py-1.5 px-4" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC', color: '#993C1D' }}>
-            걸어서 갈 수 있는 일자리
-          </span>
-        </div>
-        <div className="animate-fade-up animation-delay-100 text-[22px] text-[#212121] font-extrabold text-center leading-snug">
+        <div className="animate-fade-up animation-delay-100 text-[22px] text-[#212121] font-extrabold text-center leading-snug mt-3">
           내 주변 일자리,<br />바로 알려드려요
         </div>
       </div>
@@ -294,47 +282,6 @@ function LoginScreen({ onNext, onBack }) {
           >
             로그인
           </button>
-        </div>
-
-        {/* 구분선 */}
-        <div className="flex items-center gap-4 my-6">
-          <div className="flex-1 h-px" style={{ background: '#EDE8E2' }} />
-          <span className="text-[13px] text-[#9E9E9E]">또는</span>
-          <div className="flex-1 h-px" style={{ background: '#EDE8E2' }} />
-        </div>
-
-        {/* 전화번호 로그인 */}
-        {!showPhone ? (
-          <button
-            className="w-full py-[18px] px-6 rounded-[28px] text-[17px] font-semibold text-[#424242] flex items-center justify-center gap-2.5"
-            style={{ background: '#FBF9F7', border: '1px solid #EDE8E2' }}
-            onClick={() => setShowPhone(true)}
-          >
-            <span className="text-[20px]">📱</span> 전화번호로 시작하기
-          </button>
-        ) : (
-          <div className="rounded-[28px] p-5 animate-fade-in" style={{ background: '#FBF9F7', border: '2px solid #FDDCCC' }}>
-            <div className="text-[17px] font-bold text-[#212121] mb-3.5">📱 전화번호를 알려주세요</div>
-            <div className="flex gap-2.5 mb-2.5">
-              <input
-                type="tel"
-                placeholder="010-0000-0000"
-                onInput={formatPhone}
-                className="flex-1 px-4 py-[16px] rounded-[22px] text-[19px] font-semibold tracking-wider outline-none text-[#212121]"
-                style={{ border: '2px solid #EDE8E2', background: 'white' }}
-              />
-              <button className="px-[18px] py-[16px] text-white border-none rounded-[22px] text-[16px] font-bold whitespace-nowrap" style={{ background: '#E85C1E' }}>
-                인증요청
-              </button>
-            </div>
-            <div className="text-[14px] text-[#9E9E9E]">문자로 인증번호를 보내드릴게요</div>
-          </div>
-        )}
-
-        {/* 고객센터 */}
-        <div className="text-center mt-6 p-4 rounded-[18px]" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC' }}>
-          <div className="text-[16px] text-[#424242]">도움이 필요하시면 전화 주세요</div>
-          <div className="text-[22px] font-extrabold mt-1" style={{ color: '#E85C1E' }}>☎ 1588-0000</div>
         </div>
 
         {/* 고지사항 */}
@@ -433,7 +380,7 @@ function LocationScreen({ onGranted, onSkip }) {
                 내 근처 일자리를<br />바로 찾아볼까요?
               </div>
               <div className="text-base text-[#757575] leading-relaxed">
-                위치를 허용하시면<br /><strong className="text-[#424242]">걸어서 갈 수 있는 가까운 일자리</strong>를<br />먼저 보여드려요
+                위치를 허용하시면<br /><strong className="text-[#424242]">가까운 일자리</strong>를<br />먼저 보여드려요
               </div>
             </>
           )}
@@ -2069,7 +2016,7 @@ export default function HomePage() {
               <span className="text-[32px] font-black text-[#212121] tracking-[-2px]">손</span>
             </div>
             <div className="animate-fade-up animation-delay-150 text-[14px] font-medium" style={{ color: '#888780' }}>
-              걸어서 갈 수 있는 일자리
+              집 근처 일자리를 카톡으로
             </div>
             <div className="animate-fade-up animation-delay-200 mt-6">
               <div className="w-8 h-8 border-[3px] rounded-full animate-spin" style={{ borderColor: 'rgba(232,92,30,0.15)', borderTopColor: '#E85C1E' }} />
