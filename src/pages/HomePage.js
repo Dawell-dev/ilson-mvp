@@ -61,7 +61,7 @@ function formatJobFromDB(job, coords) {
 }
 
 
-const DISTANCES = ['1km', '3km', '5km', '전체'];
+const DISTANCES = ['5km', '10km', '20km', '전체'];
 
 // ─── 공통 SVG ───
 function KakaoIcon({ size = 22 }) {
@@ -97,7 +97,7 @@ function formatPhone(e) {
 }
 
 function getFiltered(jobs, distance) {
-  const max = distance === '1km' ? 1 : distance === '3km' ? 3 : distance === '5km' ? 5 : 999;
+  const max = distance === '5km' ? 5 : distance === '10km' ? 10 : distance === '20km' ? 20 : 999;
   return jobs.filter((j) => j.dist <= max);
 }
 
@@ -378,25 +378,25 @@ function LocationScreen({ onGranted, onSkip }) {
             setDone(true);
             setTimeout(() => onGranted(name), 800);
           } catch {
-            setRegionName('경기도 수원시 팔달구');
+            setRegionName('경기도 수원시 팔달구 매교동');
             setLoading(false);
             setDone(true);
-            setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
+            setTimeout(() => onGranted('경기도 수원시 팔달구 매교동'), 800);
           }
         },
         () => {
-          setRegionName('경기도 수원시 팔달구');
+          setRegionName('경기도 수원시 팔달구 매교동');
           setLoading(false);
           setDone(true);
-          setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
+          setTimeout(() => onGranted('경기도 수원시 팔달구 매교동'), 800);
         },
         { timeout: 8000 }
       );
     } else {
-      setRegionName('경기도 수원시 팔달구');
+      setRegionName('경기도 수원시 팔달구 매교동');
       setLoading(false);
       setDone(true);
-      setTimeout(() => onGranted('경기도 수원시 팔달구'), 800);
+      setTimeout(() => onGranted('경기도 수원시 팔달구 매교동'), 800);
     }
   };
 
@@ -615,7 +615,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
             <span className="text-[16px] flex-shrink-0">🔍</span>
             <input
               type="text"
-              placeholder="주소 또는 지역 검색 (예: 강남구)"
+              placeholder="주소 또는 지역 검색 (예: 팔달구 매교동)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 bg-transparent outline-none text-[14px] min-w-0"
@@ -828,7 +828,7 @@ const deleteCertification = async (id) => {
 // ─────────────────────────────────────
 function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) {
   const navigate = useNavigate();
-  const [currentDistance, setCurrentDistance] = useState('3km');
+  const [currentDistance, setCurrentDistance] = useState('10km');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [favorites, setFavorites] = useState([]);
@@ -995,7 +995,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
             </div>
             <div className="text-left">
               <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>
-                {region || '경기도 수원시 팔달구'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span>
+                {region || '경기도 수원시 팔달구 매교동'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span>
               </div>
               <div className="text-[11px] font-medium mt-px" style={{ color: '#888780' }}>
                 {region && region !== '위치 미설정' ? '눌러서 위치 변경' : '눌러서 위치 설정'}
