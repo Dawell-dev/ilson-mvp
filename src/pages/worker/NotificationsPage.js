@@ -4,16 +4,16 @@ import { supabase } from '../../lib/supabase';
 import { BottomNav } from '../../components/common';
 
 const JOB_ICONS = {
-  '청소/미화': '🧹',
-  '경비/주차관리': '🛡️',
-  '시설관리': '🔧',
+  '경비/보안': '🏢',
+  '미화': '🧹',
+  '기타': '🔧',
 };
 
 // 실제 알림이 없을 때 보여줄 미리보기 샘플
 const SAMPLE = [
-  { id: 's1', job_type: '청소/미화', company: '미래크린', title: '매교동 아파트 미화원 모집', wage: '월 215만원', when: '방금 전' },
-  { id: 's2', job_type: '경비/주차관리', company: '안심시큐리티', title: '영통동 상가 경비원 구함', wage: '월 240만원', when: '1시간 전' },
-  { id: 's3', job_type: '시설관리', company: '대원FM', title: '권선동 빌딩 시설기사', wage: '월 260만원', when: '오늘 오전' },
+  { id: 's1', job_type: '미화', company: '미래크린', title: '매교동 아파트 미화원 모집', wage: '월 215만원', when: '방금 전' },
+  { id: 's2', job_type: '경비/보안', company: '안심시큐리티', title: '영통동 상가 경비원 구함', wage: '월 240만원', when: '1시간 전' },
+  { id: 's3', job_type: '기타', company: '대원FM', title: '권선동 빌딩 시설기사', wage: '월 260만원', when: '오늘 오전' },
 ];
 
 function formatWage(job) {
