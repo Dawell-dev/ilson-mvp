@@ -24,6 +24,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { JOB_ICONS } from '../constants/jobTypes';
 import { haversine, formatDistance, walkMinutes } from '../lib/distance';
+import { FONT_SCALE_OPTIONS, getFontScale, setFontScale } from '../lib/fontScale';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
 // ─── 데이터 유틸 ───
@@ -1192,6 +1193,42 @@ function ProfileSection({ icon, iconBg, title, badge, children }) {
   );
 }
 
+function FontScaleSection() {
+  const [scale, setScale] = useState(getFontScale());
+
+  const select = (value) => {
+    setScale(value);
+    setFontScale(value); // 즉시 전역 반영 + localStorage 저장
+  };
+
+  return (
+    <ProfileSection icon="🔍" iconBg="#FFF5F0" title="글자 크기">
+      <div className="grid grid-cols-4 gap-2">
+        {FONT_SCALE_OPTIONS.map((opt) => {
+          const active = scale === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => select(opt.value)}
+              className="py-2.5 px-1 rounded-lg text-[calc(13px*var(--font-scale,1))] font-medium border-none active:scale-95 transition-transform"
+              style={{
+                background: active ? '#E85C1E' : '#F7F5F2',
+                color: active ? '#fff' : '#5F5E5A',
+                fontWeight: active ? 700 : 500,
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[calc(12px*var(--font-scale,1))]" style={{ color: '#B4B2A9' }}>
+        선택하면 바로 적용돼요
+      </p>
+    </ProfileSection>
+  );
+}
+
 function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorkerId, careers, setCareers, certifications, setCertifications }) {
   const toggleArr = (key, val) => {
     setProfile(p => {
@@ -1591,6 +1628,9 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             onBlur={() => triggerSave()}
           />
         </ProfileSection>
+
+        {/* 글자 크기 설정 */}
+        <FontScaleSection />
 
       </div>
 
