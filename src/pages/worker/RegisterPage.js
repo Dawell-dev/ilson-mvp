@@ -94,8 +94,8 @@ function RegisterPage() {
 
   const Header = ({ title, sub }) => (
     <div className="px-6 py-8" style={{ background: '#E85C1E' }}>
-      <h1 className="text-[28px] font-bold text-white">{title}</h1>
-      <p className="text-[16px] text-white/80 mt-1">{sub}</p>
+      <h1 className="text-[calc(28px*var(--font-scale,1))] font-bold text-white">{title}</h1>
+      <p className="text-[calc(16px*var(--font-scale,1))] text-white/80 mt-1">{sub}</p>
     </div>
   );
 
@@ -114,29 +114,29 @@ function RegisterPage() {
           {profile.avatarUrl && (
             <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl" style={{ background: '#FFF5F0', border: '1px solid #FDDCCC' }}>
               <img src={profile.avatarUrl} alt="" className="w-12 h-12 rounded-full" />
-              <div className="text-[16px] font-bold text-[#1A1A18]">{profile.name}님, 반가워요</div>
+              <div className="text-[calc(16px*var(--font-scale,1))] font-bold text-[#1A1A18]">{profile.name}님, 반가워요</div>
             </div>
           )}
           <div className="space-y-4 mb-8">
             <div className="flex items-start gap-4 bg-white rounded-2xl p-5 border border-[#EDE8E2]">
               <span className="text-2xl">📍</span>
               <div>
-                <div className="text-[18px] font-bold text-[#1A1A18]">위치 허용</div>
-                <div className="text-[15px] text-[#7A756C] mt-1">가까운 일자리를 먼저 보여드려요</div>
+                <div className="text-[calc(18px*var(--font-scale,1))] font-bold text-[#1A1A18]">위치 허용</div>
+                <div className="text-[calc(15px*var(--font-scale,1))] text-[#7A756C] mt-1">가까운 일자리를 먼저 보여드려요</div>
               </div>
             </div>
             <div className="flex items-start gap-4 bg-white rounded-2xl p-5 border border-[#EDE8E2]">
               <span className="text-2xl">🔔</span>
               <div>
-                <div className="text-[18px] font-bold text-[#1A1A18]">알림 허용</div>
-                <div className="text-[15px] text-[#7A756C] mt-1">새 일자리를 카톡으로 알려드려요</div>
+                <div className="text-[calc(18px*var(--font-scale,1))] font-bold text-[#1A1A18]">알림 허용</div>
+                <div className="text-[calc(15px*var(--font-scale,1))] text-[#7A756C] mt-1">새 일자리를 카톡으로 알려드려요</div>
               </div>
             </div>
           </div>
-          <button className="w-full py-5 rounded-2xl text-[18px] font-bold text-white border-none" style={{ background: '#E85C1E' }} onClick={requestPermissions}>
+          <button className="w-full py-5 rounded-2xl text-[calc(18px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: '#E85C1E' }} onClick={requestPermissions}>
             허용하고 계속하기
           </button>
-          <button className="w-full py-4 mt-3 rounded-2xl text-[16px] font-medium border-none" style={{ background: '#F7F5F2', color: '#888780' }} onClick={() => setStep(2)}>
+          <button className="w-full py-4 mt-3 rounded-2xl text-[calc(16px*var(--font-scale,1))] font-medium border-none" style={{ background: '#F7F5F2', color: '#888780' }} onClick={() => setStep(2)}>
             나중에 하기
           </button>
         </div>
@@ -151,20 +151,20 @@ function RegisterPage() {
         <Header title="어느 동네에서 찾으세요?" sub="기준이 될 동네를 골라주세요" />
         <div className="px-6 py-8">
           <Bar n={2} />
-          <label className="block text-[18px] font-bold text-[#1A1A18] mb-2">시</label>
+          <label className="block text-[calc(18px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-2">시</label>
           <div className="grid grid-cols-3 gap-3 mb-6">
             {Object.keys(REGIONS).map((city) => (
-              <button key={city} onClick={() => setSel({ city, gu: '', dong: '' })} className="py-3 rounded-2xl text-[17px] font-medium border-2" style={selBtn(sel.city === city)}>
+              <button key={city} onClick={() => setSel({ city, gu: '', dong: '' })} className="py-3 rounded-2xl text-[calc(17px*var(--font-scale,1))] font-medium border-2" style={selBtn(sel.city === city)}>
                 {city}
               </button>
             ))}
           </div>
           {sel.city && (
             <>
-              <label className="block text-[18px] font-bold text-[#1A1A18] mb-2">구</label>
+              <label className="block text-[calc(18px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-2">구</label>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {Object.keys(REGIONS[sel.city]).map((gu) => (
-                  <button key={gu} onClick={() => setSel((s) => ({ ...s, gu, dong: '' }))} className="py-3 rounded-2xl text-[17px] font-medium border-2" style={selBtn(sel.gu === gu)}>
+                  <button key={gu} onClick={() => setSel((s) => ({ ...s, gu, dong: '' }))} className="py-3 rounded-2xl text-[calc(17px*var(--font-scale,1))] font-medium border-2" style={selBtn(sel.gu === gu)}>
                     {gu}
                   </button>
                 ))}
@@ -173,17 +173,17 @@ function RegisterPage() {
           )}
           {sel.gu && (
             <>
-              <label className="block text-[18px] font-bold text-[#1A1A18] mb-2">동</label>
+              <label className="block text-[calc(18px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-2">동</label>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {REGIONS[sel.city][sel.gu].map((dong) => (
-                  <button key={dong} onClick={() => setSel((s) => ({ ...s, dong }))} className="py-3 rounded-2xl text-[17px] font-medium border-2" style={selBtn(sel.dong === dong)}>
+                  <button key={dong} onClick={() => setSel((s) => ({ ...s, dong }))} className="py-3 rounded-2xl text-[calc(17px*var(--font-scale,1))] font-medium border-2" style={selBtn(sel.dong === dong)}>
                     {dong}
                   </button>
                 ))}
               </div>
             </>
           )}
-          <button className="w-full py-5 rounded-2xl text-[18px] font-bold text-white border-none" style={{ background: region ? '#E85C1E' : '#CCC' }} disabled={!region} onClick={() => setStep(3)}>
+          <button className="w-full py-5 rounded-2xl text-[calc(18px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: region ? '#E85C1E' : '#CCC' }} disabled={!region} onClick={() => setStep(3)}>
             다음으로
           </button>
         </div>
@@ -198,18 +198,18 @@ function RegisterPage() {
         <Header title="어떤 일을 찾으세요?" sub="원하는 직종을 골라주세요" />
         <div className="px-6 py-8">
           <Bar n={3} />
-          <label className="block text-[18px] font-bold text-[#1A1A18] mb-3">희망 직종 (복수 선택 가능)</label>
+          <label className="block text-[calc(18px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-3">희망 직종 (복수 선택 가능)</label>
           <div className="space-y-3 mb-8">
             {JOB_TYPES.map((type) => (
-              <button key={type} onClick={() => toggleJob(type)} className="w-full py-5 rounded-2xl text-[19px] font-bold border-2" style={selBtn(jobTypes.includes(type))}>
+              <button key={type} onClick={() => toggleJob(type)} className="w-full py-5 rounded-2xl text-[calc(19px*var(--font-scale,1))] font-bold border-2" style={selBtn(jobTypes.includes(type))}>
                 {type}
               </button>
             ))}
           </div>
-          <button className="w-full py-5 rounded-2xl text-[18px] font-bold text-white border-none" style={{ background: jobTypes.length ? '#E85C1E' : '#CCC' }} disabled={!jobTypes.length || loading} onClick={handleSubmit}>
+          <button className="w-full py-5 rounded-2xl text-[calc(18px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: jobTypes.length ? '#E85C1E' : '#CCC' }} disabled={!jobTypes.length || loading} onClick={handleSubmit}>
             {loading ? '등록 중...' : '완료'}
           </button>
-          <button className="w-full py-4 mt-3 rounded-2xl text-[16px] font-medium border-none" style={{ background: '#F7F5F2', color: '#888780' }} onClick={() => setStep(2)}>
+          <button className="w-full py-4 mt-3 rounded-2xl text-[calc(16px*var(--font-scale,1))] font-medium border-none" style={{ background: '#F7F5F2', color: '#888780' }} onClick={() => setStep(2)}>
             이전으로
           </button>
         </div>
@@ -224,14 +224,14 @@ function RegisterPage() {
         <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: '#FFF5F0' }}>
           <CheckCircle size={48} style={{ color: '#E85C1E' }} />
         </div>
-        <h1 className="text-[28px] font-bold text-[#1A1A18] mb-3">준비됐어요!</h1>
-        <p className="text-[18px] mb-8" style={{ color: '#888780' }}>
+        <h1 className="text-[calc(28px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-3">준비됐어요!</h1>
+        <p className="text-[calc(18px*var(--font-scale,1))] mb-8" style={{ color: '#888780' }}>
           {profile.name}님께 맞는<br />일자리를 찾아드릴게요
         </p>
-        <button className="w-full py-5 rounded-2xl text-[18px] font-bold text-white border-none" style={{ background: '#E85C1E' }} onClick={() => navigate('/')}>
+        <button className="w-full py-5 rounded-2xl text-[calc(18px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: '#E85C1E' }} onClick={() => navigate('/')}>
           일자리 보러가기
         </button>
-        <button className="w-full py-4 mt-3 rounded-2xl text-[17px] font-bold border-2" style={{ borderColor: '#E85C1E', color: '#E85C1E', background: '#FFF8F5' }} onClick={shareInvite}>
+        <button className="w-full py-4 mt-3 rounded-2xl text-[calc(17px*var(--font-scale,1))] font-bold border-2" style={{ borderColor: '#E85C1E', color: '#E85C1E', background: '#FFF8F5' }} onClick={shareInvite}>
           주변에 소개하기
         </button>
       </div>

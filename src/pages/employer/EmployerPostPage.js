@@ -42,10 +42,10 @@ function Field({ label, required, children, hint }) {
 }
 
 const inputBase =
-  'w-full px-3.5 py-2.5 rounded-lg text-[14px] outline-none border-[1.5px] border-[#EDE8E2] bg-white text-[#1A1A18] focus:border-[#E85C1E] transition-colors';
+  'w-full px-3.5 py-2.5 rounded-lg text-[calc(14px*var(--font-scale,1))] outline-none border-[1.5px] border-[#EDE8E2] bg-white text-[#1A1A18] focus:border-[#E85C1E] transition-colors';
 
 const textareaBase =
-  'w-full px-3 py-2.5 rounded-lg text-[14px] outline-none border-[1.5px] border-[#EDE8E2] bg-white text-[#1A1A18] focus:border-[#E85C1E] resize-none transition-colors';
+  'w-full px-3 py-2.5 rounded-lg text-[calc(14px*var(--font-scale,1))] outline-none border-[1.5px] border-[#EDE8E2] bg-white text-[#1A1A18] focus:border-[#E85C1E] resize-none transition-colors';
 
 function EmployerPostPage() {
   const navigate = useNavigate();
@@ -368,14 +368,14 @@ function EmployerPostPage() {
                 const num = parseInt(formData.wageAmount.replace(/,/g, ''), 10) || 0;
                 if (formData.wageType === 'hourly' && num > 0 && num < 9860) {
                   return (
-                    <p className="text-[12px] mt-1.5" style={{ color: '#888780' }}>
+                    <p className="text-[calc(12px*var(--font-scale,1))] mt-1.5" style={{ color: '#888780' }}>
                       💡 2024 최저시급(9,860원) 미만이에요. 한 번 더 확인해주세요.
                     </p>
                   );
                 }
                 if (formData.wageType === 'monthly' && num > 100000000) {
                   return (
-                    <p className="text-[12px] mt-1.5" style={{ color: '#888780' }}>
+                    <p className="text-[calc(12px*var(--font-scale,1))] mt-1.5" style={{ color: '#888780' }}>
                       💡 금액이 너무 큰 것 같아요. 한 번 더 확인해주세요.
                     </p>
                   );

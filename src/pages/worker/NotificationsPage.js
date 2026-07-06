@@ -78,14 +78,14 @@ export default function NotificationsPage() {
         >
           <span className="text-2xl">←</span>
         </button>
-        <h1 className="text-[20px] font-extrabold text-[#1A1A18]">알림</h1>
+        <h1 className="text-[calc(20px*var(--font-scale,1))] font-extrabold text-[#1A1A18]">알림</h1>
       </div>
 
       {/* 샘플 안내 배너 */}
       {isSample && (
         <div className="mx-4 mt-4 p-4 rounded-2xl bg-[#FFF5F0] border border-[#FDDCCC]">
-          <p className="text-[15px] text-[#E85C1E] font-bold mb-1">알림 미리보기</p>
-          <p className="text-[14px] text-[#7A756C] leading-relaxed">
+          <p className="text-[calc(15px*var(--font-scale,1))] text-[#E85C1E] font-bold mb-1">알림 미리보기</p>
+          <p className="text-[calc(14px*var(--font-scale,1))] text-[#7A756C] leading-relaxed">
             조건에 맞는 일자리가 등록되면 카카오톡으로 알림을 보내드립니다.
             아래는 알림이 어떻게 오는지 보여주는 예시입니다.
           </p>
@@ -103,15 +103,15 @@ export default function NotificationsPage() {
           SAMPLE.map((n) => (
             <div key={n.id} className="bg-white rounded-2xl p-5 border border-[#EDE8E2]">
               <div className="flex items-center justify-between mb-3">
-                <span className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 text-[15px] font-bold px-3 py-1.5 rounded-full">
+                <span className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 text-[calc(15px*var(--font-scale,1))] font-bold px-3 py-1.5 rounded-full">
                   {JOB_ICONS[n.job_type]} {n.job_type}
                 </span>
-                <span className="text-[13px] text-[#B4B2A9]">{n.when}</span>
+                <span className="text-[calc(13px*var(--font-scale,1))] text-[#B4B2A9]">{n.when}</span>
               </div>
-              <p className="text-[19px] font-bold text-[#1A1A18] mb-1">{n.title}</p>
-              <p className="text-[15px] text-[#7A756C] mb-3">{n.company}</p>
+              <p className="text-[calc(19px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-1">{n.title}</p>
+              <p className="text-[calc(15px*var(--font-scale,1))] text-[#7A756C] mb-3">{n.company}</p>
               <div className="bg-[#F0FAF4] rounded-xl px-4 py-3">
-                <span className="text-[20px] font-bold text-green-600">{n.wage}</span>
+                <span className="text-[calc(20px*var(--font-scale,1))] font-bold text-green-600">{n.wage}</span>
               </div>
             </div>
           ))}
@@ -127,16 +127,16 @@ export default function NotificationsPage() {
                 className="w-full text-left bg-white rounded-2xl p-5 border border-[#EDE8E2] active:scale-[0.99] transition-transform"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 text-[15px] font-bold px-3 py-1.5 rounded-full">
+                  <span className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 text-[calc(15px*var(--font-scale,1))] font-bold px-3 py-1.5 rounded-full">
                     {JOB_ICONS[job?.job_type]} {job?.job_type || '새 일자리'}
                   </span>
-                  <span className="text-[13px] text-[#B4B2A9]">{timeAgo(n.sent_at)}</span>
+                  <span className="text-[calc(13px*var(--font-scale,1))] text-[#B4B2A9]">{timeAgo(n.sent_at)}</span>
                 </div>
-                <p className="text-[19px] font-bold text-[#1A1A18] mb-1">{job?.title || n.message}</p>
-                {company && <p className="text-[15px] text-[#7A756C] mb-3">{company}</p>}
+                <p className="text-[calc(19px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-1">{job?.title || n.message}</p>
+                {company && <p className="text-[calc(15px*var(--font-scale,1))] text-[#7A756C] mb-3">{company}</p>}
                 {job && (
                   <div className="bg-[#F0FAF4] rounded-xl px-4 py-3">
-                    <span className="text-[20px] font-bold text-green-600">{formatWage(job)}</span>
+                    <span className="text-[calc(20px*var(--font-scale,1))] font-bold text-green-600">{formatWage(job)}</span>
                   </div>
                 )}
               </button>

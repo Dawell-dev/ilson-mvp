@@ -29,9 +29,9 @@ function Button({
   };
 
   const sizes = {
-    small: 'px-5 py-3 text-[16px]',
-    medium: 'px-6 py-4 text-[18px]',
-    large: 'py-[20px] px-6 text-[19px]',  // 시니어용 큰 버튼
+    small: 'px-5 py-3 text-[calc(16px*var(--font-scale,1))]',
+    medium: 'px-6 py-4 text-[calc(18px*var(--font-scale,1))]',
+    large: 'py-[20px] px-6 text-[calc(19px*var(--font-scale,1))]',  // 시니어용 큰 버튼
   };
 
   return (

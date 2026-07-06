@@ -24,6 +24,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { JOB_ICONS } from '../constants/jobTypes';
 import { haversine, formatDistance, walkMinutes } from '../lib/distance';
+import { FONT_SCALE_OPTIONS, getFontScale, setFontScale } from '../lib/fontScale';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
 // ─── 데이터 유틸 ───
@@ -150,7 +151,7 @@ function LandingScreen({ onStart }) {
     <div className="min-h-screen flex flex-col px-6 py-10" style={{ background: 'linear-gradient(180deg, #FFF5F0 0%, #FFFFFF 55%)' }}>
       <div className="flex-1 flex flex-col justify-center items-center text-center">
         {/* 워드마크 (임시 로고) */}
-        <div className="text-[26px] font-extrabold mb-7" style={{ color: '#E85C1E' }}>일손</div>
+        <div className="text-[calc(26px*var(--font-scale,1))] font-extrabold mb-7" style={{ color: '#E85C1E' }}>일손</div>
 
         {/* 지도 + 위치 핀 일러스트 */}
         <svg viewBox="0 0 320 210" className="w-full max-w-[300px] mb-8" xmlns="http://www.w3.org/2000/svg">
@@ -178,7 +179,7 @@ function LandingScreen({ onStart }) {
         </svg>
 
         {/* 헤드 */}
-        <h1 className="text-[30px] font-extrabold text-[#1A1A18] leading-tight">
+        <h1 className="text-[calc(30px*var(--font-scale,1))] font-extrabold text-[#1A1A18] leading-tight">
           집 근처 일자리를<br />카톡으로 받으세요
         </h1>
       </div>
@@ -187,12 +188,12 @@ function LandingScreen({ onStart }) {
       <div className="pt-4">
         <button
           onClick={onStart}
-          className="w-full text-white text-[19px] font-bold py-4 rounded-2xl active:scale-[0.98] transition-transform"
+          className="w-full text-white text-[calc(19px*var(--font-scale,1))] font-bold py-4 rounded-2xl active:scale-[0.98] transition-transform"
           style={{ background: '#E85C1E' }}
         >
           눌러서 시작하기
         </button>
-        <p className="text-center text-[14px] text-[#B4B2A9] mt-4">
+        <p className="text-center text-[calc(14px*var(--font-scale,1))] text-[#B4B2A9] mt-4">
           청소·미화 · 경비·주차 · 시설관리
         </p>
       </div>
@@ -244,7 +245,7 @@ function LoginScreen({ onNext, onBack }) {
             </div>
           </div>
         </div>
-        <div className="animate-fade-up animation-delay-100 text-[22px] text-[#212121] font-extrabold text-center leading-snug mt-3">
+        <div className="animate-fade-up animation-delay-100 text-[calc(22px*var(--font-scale,1))] text-[#212121] font-extrabold text-center leading-snug mt-3">
           내 주변 일자리,<br />바로 알려드려요
         </div>
       </div>
@@ -252,7 +253,7 @@ function LoginScreen({ onNext, onBack }) {
       {/* 하단 버튼 영역 */}
       <div className="px-6 pb-12 pt-5">
         <button
-          className="w-full py-[20px] px-6 border-none rounded-[28px] text-[19px] font-bold flex items-center justify-center gap-3 shadow-[0_4px_16px_rgba(254,229,0,0.35)] animate-fade-up animation-delay-200 active:scale-[0.97] transition-transform"
+          className="w-full py-[20px] px-6 border-none rounded-[28px] text-[calc(19px*var(--font-scale,1))] font-bold flex items-center justify-center gap-3 shadow-[0_4px_16px_rgba(254,229,0,0.35)] animate-fade-up animation-delay-200 active:scale-[0.97] transition-transform"
           style={{ background: '#FEE500', color: '#191919' }}
           onClick={handleKakao}
           disabled={loading}
@@ -269,12 +270,12 @@ function LoginScreen({ onNext, onBack }) {
             </>
           )}
         </button>
-        <div className="text-center mt-3 text-[15px] text-[#9E9E9E] leading-relaxed animate-fade-up animation-delay-250">
+        <div className="text-center mt-3 text-[calc(15px*var(--font-scale,1))] text-[#9E9E9E] leading-relaxed animate-fade-up animation-delay-250">
           터치 한 번이면 바로 시작돼요
         </div>
 
         {/* 기업 로그인 링크 */}
-        <div className="text-center mt-4 text-[14px] text-[#888780] animate-fade-up animation-delay-300">
+        <div className="text-center mt-4 text-[calc(14px*var(--font-scale,1))] text-[#888780] animate-fade-up animation-delay-300">
           기업 회원이신가요?{' '}
           <button
             onClick={() => navigate('/employer/login')}
@@ -287,13 +288,13 @@ function LoginScreen({ onNext, onBack }) {
         {/* 고지사항 */}
         <div className="mt-5 p-4 rounded-[18px]" style={{ background: '#F5F0EB' }}>
           <ul className="list-none p-0 m-0 flex flex-col gap-1">
-            <li className="text-[12px] text-[#999] leading-relaxed">· 일손은 구인·구직 정보를 연결해주는 플랫폼이에요</li>
-            <li className="text-[12px] text-[#999] leading-relaxed">· 근로계약은 구인업체와 직접 체결해야 해요</li>
+            <li className="text-[calc(12px*var(--font-scale,1))] text-[#999] leading-relaxed">· 일손은 구인·구직 정보를 연결해주는 플랫폼이에요</li>
+            <li className="text-[calc(12px*var(--font-scale,1))] text-[#999] leading-relaxed">· 근로계약은 구인업체와 직접 체결해야 해요</li>
           </ul>
         </div>
 
         {/* 약관 동의 */}
-        <div className="text-center mt-4 text-[13px] text-[#9E9E9E] leading-relaxed">
+        <div className="text-center mt-4 text-[calc(13px*var(--font-scale,1))] text-[#9E9E9E] leading-relaxed">
           시작하면 <span className="underline cursor-pointer">이용약관</span> 및 <span className="underline cursor-pointer">개인정보처리방침</span>에 동의하게 돼요
         </div>
       </div>
@@ -359,7 +360,7 @@ function LocationScreen({ onGranted, onSkip }) {
           <div className="absolute top-[35%] left-[72%] text-xl animate-bounce" style={{ animationDelay: '0.7s' }}>📍</div>
           <div className="absolute top-[68%] left-[28%] text-xl animate-bounce" style={{ animationDelay: '0.9s' }}>📍</div>
           <div className="w-[60px] h-[60px] rounded-full bg-white shadow-[0_4px_16px_rgba(230,81,0,0.25)] flex items-center justify-center z-[2] relative">
-            <div className="w-11 h-11 rounded-[22px] bg-primary flex items-center justify-center text-[22px]">📍</div>
+            <div className="w-11 h-11 rounded-[22px] bg-primary flex items-center justify-center text-[calc(22px*var(--font-scale,1))]">📍</div>
             <div className="absolute w-[76px] h-[76px] rounded-full border-[3px] border-primary/20 animate-ping" />
           </div>
         </div>
@@ -368,15 +369,15 @@ function LocationScreen({ onGranted, onSkip }) {
         <div className="text-center mb-8">
           {done ? (
             <>
-              <div className="text-[46px] mb-3.5">✅</div>
-              <div className="text-[23px] font-extrabold text-primary mb-2">위치 확인 완료!</div>
+              <div className="text-[calc(46px*var(--font-scale,1))] mb-3.5">✅</div>
+              <div className="text-[calc(23px*var(--font-scale,1))] font-extrabold text-primary mb-2">위치 확인 완료!</div>
               <div className="text-base text-[#424242] leading-relaxed">
                 <strong className="text-primary font-bold">{regionName}</strong> 근처<br />일자리를 찾고 있어요
               </div>
             </>
           ) : (
             <>
-              <div className="text-[25px] font-extrabold text-[#212121] mb-2.5 leading-snug">
+              <div className="text-[calc(25px*var(--font-scale,1))] font-extrabold text-[#212121] mb-2.5 leading-snug">
                 내 근처 일자리를<br />바로 찾아볼까요?
               </div>
               <div className="text-base text-[#757575] leading-relaxed">
@@ -420,7 +421,7 @@ function LocationScreen({ onGranted, onSkip }) {
               )}
             </button>
             <button
-              className="w-full py-3.5 bg-transparent text-[#9E9E9E] border-none text-[15px] font-medium mt-2.5"
+              className="w-full py-3.5 bg-transparent text-[#9E9E9E] border-none text-[calc(15px*var(--font-scale,1))] font-medium mt-2.5"
               onClick={onSkip}
             >
               나중에 할게요
@@ -538,21 +539,21 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
 
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0">
-          <div className="text-[18px] font-extrabold" style={{ color: '#1A1A18' }}>위치 변경</div>
+          <div className="text-[calc(18px*var(--font-scale,1))] font-extrabold" style={{ color: '#1A1A18' }}>위치 변경</div>
           <button
             className="w-11 h-11 rounded-full flex items-center justify-center active:scale-90 transition-transform"
             style={{ background: '#F7F5F2' }}
             onClick={onClose}
             aria-label="닫기"
           >
-            <span className="text-[16px]" style={{ color: '#888780' }}>✕</span>
+            <span className="text-[calc(16px*var(--font-scale,1))]" style={{ color: '#888780' }}>✕</span>
           </button>
         </div>
 
         {/* 현재 위치 — 검색창 위 얇은 라벨 */}
         {currentRegion && currentRegion !== '위치 미설정' && (
           <div className="px-5 pb-1.5 flex-shrink-0">
-            <div className="text-[12px]" style={{ color: '#888780' }}>
+            <div className="text-[calc(12px*var(--font-scale,1))]" style={{ color: '#888780' }}>
               현재: <span style={{ color: '#1A1A18' }}>{currentRegion}</span>
             </div>
           </div>
@@ -561,13 +562,13 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
         {/* 검색창 — 우측 GPS 아이콘 통합 */}
         <div className="px-5 pb-2 flex-shrink-0">
           <div className="flex items-center gap-2 px-3.5 py-3 rounded-xl" style={{ background: '#F7F5F2', border: '1.5px solid #EDE8E2' }}>
-            <span className="text-[16px] flex-shrink-0">🔍</span>
+            <span className="text-[calc(16px*var(--font-scale,1))] flex-shrink-0">🔍</span>
             <input
               type="text"
               placeholder="주소 또는 지역 검색 (예: 팔달구 매교동)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-[14px] min-w-0"
+              className="flex-1 bg-transparent outline-none text-[calc(14px*var(--font-scale,1))] min-w-0"
               style={{ color: '#1A1A18' }}
             />
             {query && (
@@ -577,7 +578,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
                 style={{ background: '#DDD8D1' }}
                 aria-label="검색어 지우기"
               >
-                <span className="text-[11px]" style={{ color: '#fff' }}>✕</span>
+                <span className="text-[calc(11px*var(--font-scale,1))]" style={{ color: '#fff' }}>✕</span>
               </button>
             )}
             <button
@@ -591,7 +592,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
                 <div className="w-4 h-4 border-[2px] rounded-full animate-spin"
                   style={{ borderColor: 'rgba(232,92,30,0.2)', borderTopColor: '#E85C1E' }} />
               ) : (
-                <span className="text-[18px]">📍</span>
+                <span className="text-[calc(18px*var(--font-scale,1))]">📍</span>
               )}
             </button>
           </div>
@@ -600,7 +601,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
         {/* 에러 메시지 */}
         {error && (
           <div className="px-5 pb-2 flex-shrink-0">
-            <div className="text-[13px] py-2 px-3 rounded-lg" style={{ background: '#FEE8E8', color: '#C62828' }}>
+            <div className="text-[calc(13px*var(--font-scale,1))] py-2 px-3 rounded-lg" style={{ background: '#FEE8E8', color: '#C62828' }}>
               ⚠️ {error}
             </div>
           </div>
@@ -612,17 +613,17 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
             <div className="py-6 text-center">
               <div className="inline-block w-5 h-5 border-[2px] rounded-full animate-spin"
                 style={{ borderColor: 'rgba(232,92,30,0.2)', borderTopColor: '#E85C1E' }} />
-              <div className="text-[13px] mt-2" style={{ color: '#888780' }}>검색 중...</div>
+              <div className="text-[calc(13px*var(--font-scale,1))] mt-2" style={{ color: '#888780' }}>검색 중...</div>
             </div>
           )}
 
           {!loading && query && results.length === 0 && !error && (
             <div className="py-6 text-center">
-              <div className="text-[28px] mb-1.5">🔍</div>
-              <div className="text-[14px]" style={{ color: '#888780' }}>
+              <div className="text-[calc(28px*var(--font-scale,1))] mb-1.5">🔍</div>
+              <div className="text-[calc(14px*var(--font-scale,1))]" style={{ color: '#888780' }}>
                 일치하는 주소가 없어요
               </div>
-              <div className="text-[12px] mt-1" style={{ color: '#B4B2A9' }}>
+              <div className="text-[calc(12px*var(--font-scale,1))] mt-1" style={{ color: '#B4B2A9' }}>
                 지역명 또는 주소 일부로 다시 검색해보세요
               </div>
             </div>
@@ -630,7 +631,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
 
           {!loading && results.length > 0 && (
             <>
-              <div className="text-[12px] font-medium mt-1 mb-1" style={{ color: '#888780' }}>
+              <div className="text-[calc(12px*var(--font-scale,1))] font-medium mt-1 mb-1" style={{ color: '#888780' }}>
                 검색 결과 {results.length}개
               </div>
               <div className="flex flex-col">
@@ -643,9 +644,9 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
                       className="flex items-center gap-2.5 py-3 px-2 text-left rounded-lg active:bg-[#FFF5F0] transition-colors"
                       style={{ borderBottom: idx < results.length - 1 ? '1px solid #F3EFEA' : 'none' }}
                     >
-                      <span className="text-[16px] flex-shrink-0">📍</span>
+                      <span className="text-[calc(16px*var(--font-scale,1))] flex-shrink-0">📍</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[15px] font-bold leading-snug truncate" style={{ color: '#1A1A18' }}>
+                        <div className="text-[calc(15px*var(--font-scale,1))] font-bold leading-snug truncate" style={{ color: '#1A1A18' }}>
                           {fullAddress}
                         </div>
                       </div>
@@ -653,7 +654,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
                   );
                 })}
               </div>
-              <div className="text-[11px] mt-3 text-center" style={{ color: '#B4B2A9' }}>
+              <div className="text-[calc(11px*var(--font-scale,1))] mt-3 text-center" style={{ color: '#B4B2A9' }}>
                 위치 정보: OpenStreetMap
               </div>
             </>
@@ -928,7 +929,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
               <line x1="30" y1="27" x2="33" y2="33" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
             </svg>
           </div>
-          <span className="text-[18px] font-extrabold tracking-tight"><span style={{ color: '#E85C1E' }}>일</span><span style={{ color: '#1A1A18' }}>손</span></span>
+          <span className="text-[calc(18px*var(--font-scale,1))] font-extrabold tracking-tight"><span style={{ color: '#E85C1E' }}>일</span><span style={{ color: '#1A1A18' }}>손</span></span>
         </div>
         <button onClick={() => navigate('/notifications')} className="w-[36px] h-[36px] rounded-full flex items-center justify-center relative active:scale-95 transition-transform" style={{ background: '#FFF5F0', border: '1.5px solid #FDDCCC' }}>
           <span style={{ color: '#E85C1E', fontSize: '17px' }}>🔔</span>
@@ -948,15 +949,15 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
               <span style={{ fontSize: '16px' }}>📍</span>
             </div>
             <div className="text-left">
-              <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>
-                {region || '경기도 수원시 팔달구 매교동'} <span className="text-[13px] font-medium" style={{ color: '#B4B2A9' }}>▾</span>
+              <div className="text-[calc(15px*var(--font-scale,1))] font-bold" style={{ color: '#1A1A18' }}>
+                {region || '경기도 수원시 팔달구 매교동'} <span className="text-[calc(13px*var(--font-scale,1))] font-medium" style={{ color: '#B4B2A9' }}>▾</span>
               </div>
-              <div className="text-[11px] font-medium mt-px" style={{ color: '#888780' }}>
+              <div className="text-[calc(11px*var(--font-scale,1))] font-medium mt-px" style={{ color: '#888780' }}>
                 {region && region !== '위치 미설정' ? '눌러서 위치 변경' : '눌러서 위치 설정'}
               </div>
             </div>
           </button>
-          <div className="text-[12px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
+          <div className="text-[calc(12px*var(--font-scale,1))] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
             {currentDistance} 이내
           </div>
         </div>
@@ -992,10 +993,10 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
               }}
             >
               <div className="relative">
-                <span className="text-[22px]" style={{ opacity: isActive ? 1 : 0.45 }}>{tab.emoji}</span>
+                <span className="text-[calc(22px*var(--font-scale,1))]" style={{ opacity: isActive ? 1 : 0.45 }}>{tab.emoji}</span>
                 {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ background: '#E85C1E' }} />}
               </div>
-              <span className="text-[11px] mt-0.5" style={{ color: isActive ? '#E85C1E' : '#B4B2A9', fontWeight: isActive ? 700 : 400 }}>
+              <span className="text-[calc(11px*var(--font-scale,1))] mt-0.5" style={{ color: isActive ? '#E85C1E' : '#B4B2A9', fontWeight: isActive ? 700 : 400 }}>
                 {tab.label}
               </span>
             </button>
@@ -1020,10 +1021,10 @@ function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, o
     <div>
       {/* 섹션 헤더 */}
       <div className="px-4 pb-3 pt-1 flex justify-between items-center">
-        <h2 className="text-[16px] font-extrabold" style={{ color: '#1A1A18' }}>
+        <h2 className="text-[calc(16px*var(--font-scale,1))] font-extrabold" style={{ color: '#1A1A18' }}>
           {listTitle}
         </h2>
-        <span className="text-[13px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>{filtered.length}건</span>
+        <span className="text-[calc(13px*var(--font-scale,1))] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>{filtered.length}건</span>
       </div>
 
       {/* 일자리 목록 */}
@@ -1046,9 +1047,9 @@ function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, o
                   </div>
                 )}
                 <div className="text-center rounded-2xl px-5 py-5" style={{ background: '#FFF5F0', border: '1.5px solid #F5C4A8' }}>
-                  <div className="text-[17px] font-extrabold mb-1" style={{ color: '#B84A15' }}>내게 맞는 일자리 더 보기</div>
-                  <div className="text-[14px] mb-4 leading-relaxed" style={{ color: '#9A6A4E' }}>동네와 직종을 설정하면<br />딱 맞는 일자리만 모아서 보여드려요</div>
-                  <button onClick={onRequireLogin} className="w-full py-3.5 rounded-xl text-[16px] font-bold text-white border-none" style={{ background: '#E85C1E' }}>
+                  <div className="text-[calc(17px*var(--font-scale,1))] font-extrabold mb-1" style={{ color: '#B84A15' }}>내게 맞는 일자리 더 보기</div>
+                  <div className="text-[calc(14px*var(--font-scale,1))] mb-4 leading-relaxed" style={{ color: '#9A6A4E' }}>동네와 직종을 설정하면<br />딱 맞는 일자리만 모아서 보여드려요</div>
+                  <button onClick={onRequireLogin} className="w-full py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: '#E85C1E' }}>
                     설정하고 더 보기
                   </button>
                 </div>
@@ -1056,9 +1057,9 @@ function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, o
             )
           ) : (
             <div className="flex flex-col items-center justify-center py-16 animate-fade-up">
-              <div className="text-[52px] mb-4">🔍</div>
-              <div className="text-[18px] font-bold mb-2" style={{ color: '#1A1A18' }}>아직 일자리가 없어요</div>
-              <div className="text-[14px] text-center leading-relaxed" style={{ color: '#888780' }}>
+              <div className="text-[calc(52px*var(--font-scale,1))] mb-4">🔍</div>
+              <div className="text-[calc(18px*var(--font-scale,1))] font-bold mb-2" style={{ color: '#1A1A18' }}>아직 일자리가 없어요</div>
+              <div className="text-[calc(14px*var(--font-scale,1))] text-center leading-relaxed" style={{ color: '#888780' }}>
                 거리를 늘려서 찾아보시거나<br />곧 새로운 일자리가 올라올 거예요
               </div>
             </div>
@@ -1084,11 +1085,11 @@ function JobCard({ job, index, isFav, toggleFav }) {
       {/* 상단: 뱃지 + 하트 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex gap-1.5 items-center flex-wrap">
-          <span className="text-[12px] font-bold py-[4px] px-2.5 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
+          <span className="text-[calc(12px*var(--font-scale,1))] font-bold py-[4px] px-2.5 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
             🚶 {job.distance} · {job.walkTime}
           </span>
           {job.isNew && (
-            <span className="text-[11px] font-bold py-[4px] px-2.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg, #E85C1E, #FF7043)' }}>NEW</span>
+            <span className="text-[calc(11px*var(--font-scale,1))] font-bold py-[4px] px-2.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg, #E85C1E, #FF7043)' }}>NEW</span>
           )}
         </div>
         <button
@@ -1096,26 +1097,26 @@ function JobCard({ job, index, isFav, toggleFav }) {
           style={{ background: isFav ? '#FFF5F0' : '#F7F5F2' }}
           onClick={() => toggleFav(job.id)}
         >
-          <span className="text-[20px]">{isFav ? '❤️' : '🤍'}</span>
+          <span className="text-[calc(20px*var(--font-scale,1))]">{isFav ? '❤️' : '🤍'}</span>
         </button>
       </div>
 
       {/* 본문 */}
       <div className="flex gap-3.5 items-start">
-        <div className="w-[44px] h-[44px] rounded-[12px] flex items-center justify-center text-[22px] flex-shrink-0" style={{ background: '#F7F5F2' }}>
+        <div className="w-[44px] h-[44px] rounded-[12px] flex items-center justify-center text-[calc(22px*var(--font-scale,1))] flex-shrink-0" style={{ background: '#F7F5F2' }}>
           {job.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[17px] font-bold leading-snug" style={{ color: '#1A1A18' }}>{job.title}</div>
-          <div className="text-[13px] mt-1 truncate" style={{ color: '#888780' }}>{job.company} · {job.location}</div>
+          <div className="text-[calc(17px*var(--font-scale,1))] font-bold leading-snug" style={{ color: '#1A1A18' }}>{job.title}</div>
+          <div className="text-[calc(13px*var(--font-scale,1))] mt-1 truncate" style={{ color: '#888780' }}>{job.company} · {job.location}</div>
         </div>
       </div>
 
       {/* 급여 */}
       <div className="mt-3 py-2.5 px-3.5 rounded-[12px] flex items-center justify-between" style={{ background: '#FFF8F5' }}>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-[21px] font-extrabold" style={{ color: '#E85C1E', letterSpacing: '-0.5px' }}>{payType} {payAmount}</span>
-          {firstTag && <span className="text-[13px] font-medium" style={{ color: '#888780' }}>/ {firstTag}</span>}
+          <span className="text-[calc(21px*var(--font-scale,1))] font-extrabold" style={{ color: '#E85C1E', letterSpacing: '-0.5px' }}>{payType} {payAmount}</span>
+          {firstTag && <span className="text-[calc(13px*var(--font-scale,1))] font-medium" style={{ color: '#888780' }}>/ {firstTag}</span>}
         </div>
       </div>
 
@@ -1123,7 +1124,7 @@ function JobCard({ job, index, isFav, toggleFav }) {
       {job.tags.length > 1 && (
         <div className="flex gap-1.5 flex-wrap mt-2.5">
           {job.tags.slice(1).map((t) => (
-            <span key={t} className="py-[4px] px-2.5 rounded-full text-[12px] font-medium" style={{ background: '#F7F5F2', color: '#5F5E5A' }}>
+            <span key={t} className="py-[4px] px-2.5 rounded-full text-[calc(12px*var(--font-scale,1))] font-medium" style={{ background: '#F7F5F2', color: '#5F5E5A' }}>
               {t}
             </span>
           ))}
@@ -1135,7 +1136,7 @@ function JobCard({ job, index, isFav, toggleFav }) {
         {job.phone ? (
           <a
             href={`tel:${job.phone}`}
-            className="flex items-center justify-center w-full h-[50px] text-white border-none rounded-[14px] text-[16px] font-bold active:scale-[0.97] transition-transform shadow-sm"
+            className="flex items-center justify-center w-full h-[50px] text-white border-none rounded-[14px] text-[calc(16px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform shadow-sm"
             style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}
           >
             전화로 지원하기
@@ -1145,13 +1146,13 @@ function JobCard({ job, index, isFav, toggleFav }) {
             href={job.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-full h-[50px] border rounded-[14px] text-[16px] font-bold active:scale-[0.97] transition-transform"
+            className="flex items-center justify-center w-full h-[50px] border rounded-[14px] text-[calc(16px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform"
             style={{ borderColor: '#E85C1E', color: '#E85C1E', background: '#FFF8F5' }}
           >
             원문에서 지원하기
           </a>
         ) : (
-          <div className="flex items-center justify-center w-full h-[50px] rounded-[14px] text-[15px] font-medium" style={{ background: '#F7F5F2', color: '#888780' }}>
+          <div className="flex items-center justify-center w-full h-[50px] rounded-[14px] text-[calc(15px*var(--font-scale,1))] font-medium" style={{ background: '#F7F5F2', color: '#888780' }}>
             지원 정보 준비 중
           </div>
         )}
@@ -1183,12 +1184,48 @@ function ProfileSection({ icon, iconBg, title, badge, children }) {
   return (
     <div className="rounded-[12px] overflow-hidden" style={{ background: '#FAFAF8', border: '1px solid #EDE8E2' }}>
       <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #EDE8E2' }}>
-        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[14px]" style={{ background: iconBg }}>{icon}</span>
-        <span className="text-[15px] font-medium flex-1" style={{ color: '#1A1A18' }}>{title}</span>
-        {badge && <span className="text-[11px]" style={{ color: '#E85C1E' }}>{badge}</span>}
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[calc(14px*var(--font-scale,1))]" style={{ background: iconBg }}>{icon}</span>
+        <span className="text-[calc(15px*var(--font-scale,1))] font-medium flex-1" style={{ color: '#1A1A18' }}>{title}</span>
+        {badge && <span className="text-[calc(11px*var(--font-scale,1))]" style={{ color: '#E85C1E' }}>{badge}</span>}
       </div>
       <div className="p-4 flex flex-col gap-3">{children}</div>
     </div>
+  );
+}
+
+function FontScaleSection() {
+  const [scale, setScale] = useState(getFontScale());
+
+  const select = (value) => {
+    setScale(value);
+    setFontScale(value); // 즉시 전역 반영 + localStorage 저장
+  };
+
+  return (
+    <ProfileSection icon="🔍" iconBg="#FFF5F0" title="글자 크기">
+      <div className="grid grid-cols-4 gap-2">
+        {FONT_SCALE_OPTIONS.map((opt) => {
+          const active = scale === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => select(opt.value)}
+              className="py-2.5 px-1 rounded-lg text-[calc(13px*var(--font-scale,1))] font-medium border-none active:scale-95 transition-transform"
+              style={{
+                background: active ? '#E85C1E' : '#F7F5F2',
+                color: active ? '#fff' : '#5F5E5A',
+                fontWeight: active ? 700 : 500,
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[calc(12px*var(--font-scale,1))]" style={{ color: '#B4B2A9' }}>
+        선택하면 바로 적용돼요
+      </p>
+    </ProfileSection>
   );
 }
 
@@ -1393,14 +1430,14 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   return (
     <div className="relative">
       {/* 토스트 */}
-      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 py-2 px-5 rounded-full text-[13px] text-white transition-opacity" style={{ background: 'rgba(0,0,0,0.75)', opacity: toastVisible ? 1 : 0, pointerEvents: 'none' }}>
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 py-2 px-5 rounded-full text-[calc(13px*var(--font-scale,1))] text-white transition-opacity" style={{ background: 'rgba(0,0,0,0.75)', opacity: toastVisible ? 1 : 0, pointerEvents: 'none' }}>
         저장됐어요
       </div>
 
       {/* 헤더 */}
       <div className="px-5 py-5" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
-        <div className="text-[22px] font-extrabold text-white">내 이력서</div>
-        <div className="text-[13px] text-white/70 mt-1">지원할 때 자동으로 전달돼요</div>
+        <div className="text-[calc(22px*var(--font-scale,1))] font-extrabold text-white">내 이력서</div>
+        <div className="text-[calc(13px*var(--font-scale,1))] text-white/70 mt-1">지원할 때 자동으로 전달돼요</div>
       </div>
 
       <div className="p-4 flex flex-col gap-3">
@@ -1411,17 +1448,17 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="프로필" className="w-12 h-12 rounded-full object-cover" style={{ border: '2px solid #FEE500' }} />
             ) : (
-              <div className="w-12 h-12 rounded-full flex items-center justify-center text-[20px]" style={{ background: '#FEE500' }}>👤</div>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-[calc(20px*var(--font-scale,1))]" style={{ background: '#FEE500' }}>👤</div>
             )}
             <div className="flex-1">
-              <div className="text-[16px] font-medium" style={{ color: '#1A1A18' }}>{profile.name || '로그인 필요'}</div>
-              <div className="text-[13px] mt-0.5" style={{ color: '#888780' }}>{profile.phone}</div>
+              <div className="text-[calc(16px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>{profile.name || '로그인 필요'}</div>
+              <div className="text-[calc(13px*var(--font-scale,1))] mt-0.5" style={{ color: '#888780' }}>{profile.phone}</div>
             </div>
-            <span className="text-[11px] font-medium py-1 px-2 rounded-full" style={{ background: '#FEE500', color: '#3C1E1E' }}>자동입력</span>
+            <span className="text-[calc(11px*var(--font-scale,1))] font-medium py-1 px-2 rounded-full" style={{ background: '#FEE500', color: '#3C1E1E' }}>자동입력</span>
           </div>
           <div>
-            <div className="text-[13px] mb-1" style={{ color: '#888780' }}>거주 지역</div>
-            <div className="text-[15px] px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: region ? '#1A1A18' : '#B4B2A9' }}>
+            <div className="text-[calc(13px*var(--font-scale,1))] mb-1" style={{ color: '#888780' }}>거주 지역</div>
+            <div className="text-[calc(15px*var(--font-scale,1))] px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: region ? '#1A1A18' : '#B4B2A9' }}>
               {region || '위치 동의 후 자동 설정'}
             </div>
           </div>
@@ -1433,7 +1470,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             {PROFILE_DAYS.map(d => {
               const on = (profile.days || []).includes(d);
               return (
-                <button key={d} className="py-2 rounded-lg text-[14px] font-medium text-center"
+                <button key={d} className="py-2 rounded-lg text-[calc(14px*var(--font-scale,1))] font-medium text-center"
                   style={on ? { background: '#E85C1E', color: '#fff', border: '1px solid #E85C1E' } : { background: '#F7F5F2', color: '#888780', border: '1px solid #EDE8E2' }}
                   onClick={() => toggleArr('days', d)}
                 >{d}</button>
@@ -1441,12 +1478,12 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             })}
           </div>
           <div>
-            <div className="text-[13px] mb-2" style={{ color: '#888780' }}>선호 시간대</div>
+            <div className="text-[calc(13px*var(--font-scale,1))] mb-2" style={{ color: '#888780' }}>선호 시간대</div>
             <div className="flex gap-2">
               {PROFILE_TIMES.map(t => {
                 const on = (profile.times || []).includes(t);
                 return (
-                  <button key={t} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[14px]"
+                  <button key={t} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[calc(14px*var(--font-scale,1))]"
                     style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: on ? '#1A1A18' : '#888780' }}
                     onClick={() => toggleArr('times', t)}
                   >
@@ -1474,13 +1511,13 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                   <span className="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0"
                     style={on ? { background: '#E85C1E', border: '1.5px solid #E85C1E' } : { background: '#F7F5F2', border: '1.5px solid #EDE8E2' }}
                   >{on && <ProfileCheckMark />}</span>
-                  <span className="text-[15px]" style={{ color: '#1A1A18' }}>{job}</span>
+                  <span className="text-[calc(15px*var(--font-scale,1))]" style={{ color: '#1A1A18' }}>{job}</span>
                 </button>
               );
             })}
           </div>
           <div>
-            <div className="text-[13px] mb-2" style={{ color: '#888780' }}>이동 가능 거리</div>
+            <div className="text-[calc(13px*var(--font-scale,1))] mb-2" style={{ color: '#888780' }}>이동 가능 거리</div>
             <select
               value={profile.distance || ''}
               onChange={(e) => setProfile(p => {
@@ -1488,7 +1525,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 triggerSave(next);
                 return next;
               })}
-              className="w-full px-4 py-3 rounded-lg text-[15px] outline-none"
+              className="w-full px-4 py-3 rounded-lg text-[calc(15px*var(--font-scale,1))] outline-none"
               style={selectStyle}
             >
               {PROFILE_DISTS.map(d => <option key={d} value={d}>{d}</option>)}
@@ -1501,8 +1538,8 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
           {certifications.map((c) => (
             <div key={c.id} className="flex items-start gap-2">
               <div className="flex-1 px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}>
-                <div className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>{c.name}</div>
-                <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>
+                <div className="text-[calc(14px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>{c.name}</div>
+                <div className="text-[calc(12px*var(--font-scale,1))] mt-0.5" style={{ color: '#888780' }}>
                   취득 {c.issuedDate}{c.expiryDate ? ` · 만료 ${c.expiryDate}` : ' · 만료없음'}
                 </div>
               </div>
@@ -1511,12 +1548,12 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}
                 onClick={() => removeCertification(c.id)}
               >
-                <span className="text-[13px]" style={{ color: '#888780' }}>✕</span>
+                <span className="text-[calc(13px*var(--font-scale,1))]" style={{ color: '#888780' }}>✕</span>
               </button>
             </div>
           ))}
           <button
-            className="w-full py-3.5 rounded-xl text-center text-[15px] font-bold active:scale-[0.97] transition-transform"
+            className="w-full py-3.5 rounded-xl text-center text-[calc(15px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform"
             style={{ border: 'none', color: '#FFFFFF', background: '#E85C1E', boxShadow: '0 2px 8px rgba(232,92,30,0.3)' }}
             onClick={openCertForm}
           >
@@ -1532,7 +1569,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
               return (
                 <button
                   key={key}
-                  className="flex-1 flex items-center justify-center py-2.5 rounded-lg text-[14px] font-medium"
+                  className="flex-1 flex items-center justify-center py-2.5 rounded-lg text-[calc(14px*var(--font-scale,1))] font-medium"
                   style={on
                     ? { background: '#E85C1E', color: '#fff', border: '1px solid #E85C1E' }
                     : { background: '#F7F5F2', color: '#888780', border: '1px solid #EDE8E2' }}
@@ -1547,7 +1584,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
               );
             })}
           </div>
-          <div className="text-[13px] mt-1" style={{ color: '#888780' }}>
+          <div className="text-[calc(13px*var(--font-scale,1))] mt-1" style={{ color: '#888780' }}>
             {DRIVER_LICENSES.find(d => d.key === profile.driverLicense)?.hint || DRIVER_LICENSES[2].hint}
           </div>
         </ProfileSection>
@@ -1557,8 +1594,8 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
           {careers.map((c) => (
             <div key={c.id} className="flex items-start gap-2">
               <div className="flex-1 px-3 py-2.5 rounded-lg" style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}>
-                <div className="text-[14px] font-medium" style={{ color: '#1A1A18' }}>{c.company} — {c.role}</div>
-                <div className="text-[12px] mt-0.5" style={{ color: '#888780' }}>
+                <div className="text-[calc(14px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>{c.company} — {c.role}</div>
+                <div className="text-[calc(12px*var(--font-scale,1))] mt-0.5" style={{ color: '#888780' }}>
                   {c.startDate} ~ {c.endDate || '현재'} ({calcDuration(c.startDate, c.endDate)})
                 </div>
               </div>
@@ -1567,12 +1604,12 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 style={{ background: '#F7F5F2', border: '1px solid #EDE8E2' }}
                 onClick={() => removeCareer(c.id)}
               >
-                <span className="text-[13px]" style={{ color: '#888780' }}>✕</span>
+                <span className="text-[calc(13px*var(--font-scale,1))]" style={{ color: '#888780' }}>✕</span>
               </button>
             </div>
           ))}
           <button
-            className="w-full py-3.5 rounded-xl text-center text-[15px] font-bold active:scale-[0.97] transition-transform"
+            className="w-full py-3.5 rounded-xl text-center text-[calc(15px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform"
             style={{ border: 'none', color: '#FFFFFF', background: '#E85C1E', boxShadow: '0 2px 8px rgba(232,92,30,0.3)' }}
             onClick={openCareerForm}
           >
@@ -1583,7 +1620,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
         {/* 한 줄 소개 (선택) */}
         <ProfileSection icon="✏️" iconBg="#F3E5F5" title="한 줄 소개" badge="선택">
           <textarea
-            className="w-full text-[14px] leading-relaxed px-3 py-2.5 rounded-lg min-h-[64px] outline-none resize-none"
+            className="w-full text-[calc(14px*var(--font-scale,1))] leading-relaxed px-3 py-2.5 rounded-lg min-h-[64px] outline-none resize-none"
             style={{ background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#1A1A18' }}
             placeholder="간단한 자기소개를 입력해주세요"
             value={profile.bio || ''}
@@ -1592,12 +1629,15 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
           />
         </ProfileSection>
 
+        {/* 글자 크기 설정 */}
+        <FontScaleSection />
+
       </div>
 
       {/* 자동저장 안내 */}
       <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: '#FAFAF8', borderTop: '1px solid #EDE8E2' }}>
         <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-        <span className="text-[13px]" style={{ color: '#888780' }}>이력서가 자동으로 업데이트돼요</span>
+        <span className="text-[calc(13px*var(--font-scale,1))]" style={{ color: '#888780' }}>이력서가 자동으로 업데이트돼요</span>
       </div>
 
       {/* ── 바텀시트 모달: 경력 추가 ── */}
@@ -1621,13 +1661,13 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
             {/* 헤더 */}
             <div className="flex items-center justify-between px-6 py-3">
-              <div className="text-[20px] font-extrabold" style={{ color: '#1A1A18' }}>경력 추가</div>
+              <div className="text-[calc(20px*var(--font-scale,1))] font-extrabold" style={{ color: '#1A1A18' }}>경력 추가</div>
               <button
                 className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
                 style={{ background: '#F7F5F2' }}
                 onClick={closeCareerForm}
               >
-                <span className="text-[18px]" style={{ color: '#888780' }}>✕</span>
+                <span className="text-[calc(18px*var(--font-scale,1))]" style={{ color: '#888780' }}>✕</span>
               </button>
             </div>
 
@@ -1635,7 +1675,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             <div className="px-6 pb-4 flex flex-col gap-3.5">
               {/* 회사명 */}
               <div>
-                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                <label className="block text-[calc(14px*var(--font-scale,1))] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
                   회사명 <span style={{ color: '#E85C1E' }}>*</span>
                 </label>
                 <input
@@ -1643,14 +1683,14 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                   placeholder="예) 삼성물산, 대림관리"
                   value={newCareer.company}
                   onChange={(e) => setNewCareer(p => ({ ...p, company: e.target.value }))}
-                  className="w-full px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                  className="w-full px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                   style={{ border: '1.5px solid #EDE8E2', background: '#fff', color: '#1A1A18' }}
                 />
               </div>
 
               {/* 직종 */}
               <div>
-                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                <label className="block text-[calc(14px*var(--font-scale,1))] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
                   직종 <span style={{ color: '#E85C1E' }}>*</span>
                 </label>
                 <input
@@ -1658,21 +1698,21 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                   placeholder="예) 아파트 경비, 건물 청소"
                   value={newCareer.role}
                   onChange={(e) => setNewCareer(p => ({ ...p, role: e.target.value }))}
-                  className="w-full px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                  className="w-full px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                   style={{ border: '1.5px solid #EDE8E2', background: '#fff', color: '#1A1A18' }}
                 />
               </div>
 
               {/* 시작일 */}
               <div>
-                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                <label className="block text-[calc(14px*var(--font-scale,1))] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
                   시작일 <span style={{ color: '#E85C1E' }}>*</span>
                 </label>
                 <div className="flex gap-2">
                   <select
                     value={startYear}
                     onChange={(e) => setStartYear(e.target.value)}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={selectStyle}
                   >
                     <option value="" disabled>년도</option>
@@ -1681,7 +1721,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                   <select
                     value={startMonth}
                     onChange={(e) => setStartMonth(e.target.value)}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={selectStyle}
                   >
                     <option value="" disabled>월</option>
@@ -1704,12 +1744,12 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 >
                   {isCurrentJob && <ProfileCheckMark />}
                 </span>
-                <span className="text-[15px] font-medium" style={{ color: '#1A1A18' }}>현재 재직 중</span>
+                <span className="text-[calc(15px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>현재 재직 중</span>
               </button>
 
               {/* 종료일 */}
               <div>
-                <label className="block text-[14px] font-bold mb-1.5" style={{ color: isCurrentJob ? '#B4B2A9' : '#1A1A18' }}>
+                <label className="block text-[calc(14px*var(--font-scale,1))] font-bold mb-1.5" style={{ color: isCurrentJob ? '#B4B2A9' : '#1A1A18' }}>
                   종료일
                 </label>
                 <div className="flex gap-2">
@@ -1717,7 +1757,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                     value={endYear}
                     onChange={(e) => setEndYear(e.target.value)}
                     disabled={isCurrentJob}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={isCurrentJob ? selectDisabledStyle : selectStyle}
                   >
                     <option value="" disabled>{isCurrentJob ? '—' : '년도'}</option>
@@ -1727,7 +1767,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                     value={endMonth}
                     onChange={(e) => setEndMonth(e.target.value)}
                     disabled={isCurrentJob}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={isCurrentJob ? selectDisabledStyle : selectStyle}
                   >
                     <option value="" disabled>{isCurrentJob ? '—' : '월'}</option>
@@ -1740,14 +1780,14 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             {/* 하단 버튼 */}
             <div className="px-6 pb-8 pt-2 flex gap-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
               <button
-                className="flex-1 py-4 rounded-xl text-[16px] font-medium border-none active:scale-[0.97] transition-transform"
+                className="flex-1 py-4 rounded-xl text-[calc(16px*var(--font-scale,1))] font-medium border-none active:scale-[0.97] transition-transform"
                 style={{ background: '#F7F5F2', color: '#888780' }}
                 onClick={closeCareerForm}
               >
                 취소
               </button>
               <button
-                className="flex-[2] py-4 rounded-xl text-[16px] font-bold text-white border-none active:scale-[0.97] transition-transform"
+                className="flex-[2] py-4 rounded-xl text-[calc(16px*var(--font-scale,1))] font-bold text-white border-none active:scale-[0.97] transition-transform"
                 style={{ background: canSubmitCareer ? '#E85C1E' : '#CCC', boxShadow: canSubmitCareer ? '0 2px 8px rgba(232,92,30,0.3)' : 'none' }}
                 onClick={addCareer}
                 disabled={!canSubmitCareer}
@@ -1776,20 +1816,20 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             </div>
 
             <div className="flex items-center justify-between px-6 py-3">
-              <div className="text-[20px] font-extrabold" style={{ color: '#1A1A18' }}>자격증 추가</div>
+              <div className="text-[calc(20px*var(--font-scale,1))] font-extrabold" style={{ color: '#1A1A18' }}>자격증 추가</div>
               <button
                 className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
                 style={{ background: '#F7F5F2' }}
                 onClick={closeCertForm}
               >
-                <span className="text-[18px]" style={{ color: '#888780' }}>✕</span>
+                <span className="text-[calc(18px*var(--font-scale,1))]" style={{ color: '#888780' }}>✕</span>
               </button>
             </div>
 
             <div className="px-6 pb-4 flex flex-col gap-3.5">
               {/* 자격증명 */}
               <div>
-                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                <label className="block text-[calc(14px*var(--font-scale,1))] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
                   자격증명 <span style={{ color: '#E85C1E' }}>*</span>
                 </label>
                 <input
@@ -1797,7 +1837,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                   placeholder="예: 경비원 신임교육 이수"
                   value={newCert.name}
                   onChange={(e) => setNewCert({ name: e.target.value })}
-                  className="w-full px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                  className="w-full px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                   style={{ border: '1.5px solid #EDE8E2', background: '#fff', color: '#1A1A18' }}
                 />
                 <div className="flex gap-1.5 flex-wrap mt-2">
@@ -1806,7 +1846,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                     return (
                       <button
                         key={s}
-                        className="py-1.5 px-3 rounded-full text-[13px] font-medium active:scale-95 transition-transform"
+                        className="py-1.5 px-3 rounded-full text-[calc(13px*var(--font-scale,1))] font-medium active:scale-95 transition-transform"
                         style={on
                           ? { background: '#FFF5F0', border: '1.5px solid #E85C1E', color: '#E85C1E' }
                           : { background: '#F7F5F2', border: '1px solid #EDE8E2', color: '#5F5E5A' }}
@@ -1821,14 +1861,14 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
               {/* 취득일 */}
               <div>
-                <label className="block text-[14px] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
+                <label className="block text-[calc(14px*var(--font-scale,1))] font-bold mb-1.5" style={{ color: '#1A1A18' }}>
                   취득일 <span style={{ color: '#E85C1E' }}>*</span>
                 </label>
                 <div className="flex gap-2">
                   <select
                     value={certYear}
                     onChange={(e) => setCertYear(e.target.value)}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={selectStyle}
                   >
                     <option value="" disabled>년도</option>
@@ -1837,7 +1877,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                   <select
                     value={certMonth}
                     onChange={(e) => setCertMonth(e.target.value)}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={selectStyle}
                   >
                     <option value="" disabled>월</option>
@@ -1859,12 +1899,12 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                 >
                   {certNoExpiry && <ProfileCheckMark />}
                 </span>
-                <span className="text-[15px] font-medium" style={{ color: '#1A1A18' }}>만료없음</span>
+                <span className="text-[calc(15px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>만료없음</span>
               </button>
 
               {/* 만료일 */}
               <div>
-                <label className="block text-[14px] font-bold mb-1.5" style={{ color: certNoExpiry ? '#B4B2A9' : '#1A1A18' }}>
+                <label className="block text-[calc(14px*var(--font-scale,1))] font-bold mb-1.5" style={{ color: certNoExpiry ? '#B4B2A9' : '#1A1A18' }}>
                   만료일
                 </label>
                 <div className="flex gap-2">
@@ -1872,7 +1912,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                     value={certExpYear}
                     onChange={(e) => setCertExpYear(e.target.value)}
                     disabled={certNoExpiry}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={certNoExpiry ? selectDisabledStyle : selectStyle}
                   >
                     <option value="" disabled>{certNoExpiry ? '—' : '년도'}</option>
@@ -1882,7 +1922,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
                     value={certExpMonth}
                     onChange={(e) => setCertExpMonth(e.target.value)}
                     disabled={certNoExpiry}
-                    className="flex-1 px-4 py-3.5 rounded-xl text-[16px] outline-none"
+                    className="flex-1 px-4 py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] outline-none"
                     style={certNoExpiry ? selectDisabledStyle : selectStyle}
                   >
                     <option value="" disabled>{certNoExpiry ? '—' : '월'}</option>
@@ -1894,14 +1934,14 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
             <div className="px-6 pb-8 pt-2 flex gap-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
               <button
-                className="flex-1 py-4 rounded-xl text-[16px] font-medium border-none active:scale-[0.97] transition-transform"
+                className="flex-1 py-4 rounded-xl text-[calc(16px*var(--font-scale,1))] font-medium border-none active:scale-[0.97] transition-transform"
                 style={{ background: '#F7F5F2', color: '#888780' }}
                 onClick={closeCertForm}
               >
                 취소
               </button>
               <button
-                className="flex-[2] py-4 rounded-xl text-[16px] font-bold text-white border-none active:scale-[0.97] transition-transform"
+                className="flex-[2] py-4 rounded-xl text-[calc(16px*var(--font-scale,1))] font-bold text-white border-none active:scale-[0.97] transition-transform"
                 style={{ background: canSubmitCert ? '#E85C1E' : '#CCC', boxShadow: canSubmitCert ? '0 2px 8px rgba(232,92,30,0.3)' : 'none' }}
                 onClick={addCertification}
                 disabled={!canSubmitCert}
@@ -1925,10 +1965,10 @@ function FavoritesView({ favorites, toggleFav, jobs }) {
     return (
       <div className="flex flex-col items-center justify-center px-5 pt-20 animate-fade-up">
         <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center mb-5" style={{ background: '#FFF5F0' }}>
-          <span className="text-[40px]">🤍</span>
+          <span className="text-[calc(40px*var(--font-scale,1))]">🤍</span>
         </div>
-        <div className="text-[19px] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 관심 일자리가 없어요</div>
-        <div className="text-[15px] text-center leading-relaxed" style={{ color: '#888780' }}>
+        <div className="text-[calc(19px*var(--font-scale,1))] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 관심 일자리가 없어요</div>
+        <div className="text-[calc(15px*var(--font-scale,1))] text-center leading-relaxed" style={{ color: '#888780' }}>
           마음에 드는 일자리의 하트를 눌러<br />여기서 모아볼 수 있어요
         </div>
       </div>
@@ -1938,8 +1978,8 @@ function FavoritesView({ favorites, toggleFav, jobs }) {
   return (
     <div className="px-[18px] pt-4">
       <div className="flex justify-between items-center mb-3">
-        <div className="text-[15px] font-bold" style={{ color: '#1A1A18' }}>❤️ 관심 일자리</div>
-        <span className="text-[13px] font-semibold" style={{ color: '#E85C1E' }}>{favJobs.length}건</span>
+        <div className="text-[calc(15px*var(--font-scale,1))] font-bold" style={{ color: '#1A1A18' }}>❤️ 관심 일자리</div>
+        <span className="text-[calc(13px*var(--font-scale,1))] font-semibold" style={{ color: '#E85C1E' }}>{favJobs.length}건</span>
       </div>
       <div className="flex flex-col gap-3">
         {favJobs.map((job, i) => (
@@ -1955,10 +1995,10 @@ function HistoryView() {
   return (
     <div className="flex flex-col items-center justify-center px-5 pt-20 animate-fade-up">
       <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center mb-5" style={{ background: '#F0F4FF' }}>
-        <span className="text-[40px]">📋</span>
+        <span className="text-[calc(40px*var(--font-scale,1))]">📋</span>
       </div>
-      <div className="text-[19px] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 지원한 곳이 없어요</div>
-      <div className="text-[15px] text-center leading-relaxed" style={{ color: '#888780' }}>
+      <div className="text-[calc(19px*var(--font-scale,1))] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 지원한 곳이 없어요</div>
+      <div className="text-[calc(15px*var(--font-scale,1))] text-center leading-relaxed" style={{ color: '#888780' }}>
         마음에 드는 일자리에 지원하면<br />진행 상황을 여기서 확인할 수 있어요
       </div>
     </div>
@@ -2017,10 +2057,10 @@ export default function HomePage() {
               </div>
             </div>
             <div className="animate-fade-up animation-delay-100 flex items-baseline gap-px mb-3">
-              <span className="text-[32px] font-black tracking-[-2px]" style={{ color: '#E85C1E' }}>일</span>
-              <span className="text-[32px] font-black text-[#212121] tracking-[-2px]">손</span>
+              <span className="text-[calc(32px*var(--font-scale,1))] font-black tracking-[-2px]" style={{ color: '#E85C1E' }}>일</span>
+              <span className="text-[calc(32px*var(--font-scale,1))] font-black text-[#212121] tracking-[-2px]">손</span>
             </div>
-            <div className="animate-fade-up animation-delay-150 text-[14px] font-medium" style={{ color: '#888780' }}>
+            <div className="animate-fade-up animation-delay-150 text-[calc(14px*var(--font-scale,1))] font-medium" style={{ color: '#888780' }}>
               집 근처 일자리를 카톡으로
             </div>
             <div className="animate-fade-up animation-delay-200 mt-6">
