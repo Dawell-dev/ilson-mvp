@@ -171,13 +171,13 @@ export default function JobDetailPage() {
   if (!job) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: '#F7F5F2' }}>
-        <div className="text-[52px] mb-4">🔍</div>
-        <div className="text-[18px] font-bold mb-2" style={{ color: '#1A1A18' }}>일자리를 찾을 수 없어요</div>
-        <div className="text-[14px] text-center mb-6 leading-relaxed" style={{ color: '#888780' }}>
+        <div className="text-[calc(52px*var(--font-scale,1))] mb-4">🔍</div>
+        <div className="text-[calc(18px*var(--font-scale,1))] font-bold mb-2" style={{ color: '#1A1A18' }}>일자리를 찾을 수 없어요</div>
+        <div className="text-[calc(14px*var(--font-scale,1))] text-center mb-6 leading-relaxed" style={{ color: '#888780' }}>
           이미 마감되었거나<br />삭제된 일자리일 수 있어요
         </div>
         <button
-          className="py-3.5 px-7 border-none rounded-[18px] text-white text-[15px] font-bold active:scale-[0.97] transition-transform"
+          className="py-3.5 px-7 border-none rounded-[18px] text-white text-[calc(15px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform"
           style={{ background: '#E85C1E', boxShadow: '0 2px 8px rgba(232,92,30,0.3)' }}
           onClick={() => navigate('/')}
         >
@@ -203,7 +203,7 @@ export default function JobDetailPage() {
 
         {/* 토스트 */}
         <div
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-[300] py-2 px-5 rounded-full text-[13px] text-white transition-opacity"
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[300] py-2 px-5 rounded-full text-[calc(13px*var(--font-scale,1))] text-white transition-opacity"
           style={{ background: 'rgba(0,0,0,0.75)', opacity: toast ? 1 : 0, pointerEvents: 'none' }}
         >
           {toast}
@@ -220,16 +220,16 @@ export default function JobDetailPage() {
             onClick={() => navigate(-1)}
             aria-label="뒤로가기"
           >
-            <span className="text-[26px] leading-none" style={{ color: '#1A1A18' }}>‹</span>
+            <span className="text-[calc(26px*var(--font-scale,1))] leading-none" style={{ color: '#1A1A18' }}>‹</span>
           </button>
-          <div className="text-[16px] font-bold" style={{ color: '#1A1A18' }}>일자리 상세</div>
+          <div className="text-[calc(16px*var(--font-scale,1))] font-bold" style={{ color: '#1A1A18' }}>일자리 상세</div>
           <button
             className="w-11 h-11 rounded-full flex items-center justify-center active:scale-90 transition-transform"
             style={{ background: isFav ? '#FFF5F0' : 'transparent' }}
             onClick={() => setIsFav(v => !v)}
             aria-label="관심"
           >
-            <span className="text-[20px]">{isFav ? '❤️' : '🤍'}</span>
+            <span className="text-[calc(20px*var(--font-scale,1))]">{isFav ? '❤️' : '🤍'}</span>
           </button>
         </div>
 
@@ -238,7 +238,7 @@ export default function JobDetailPage() {
           <div className="px-5 pt-5 pb-5" style={{ background: '#FFFFFF' }}>
             <div className="flex gap-4 items-start">
               <div
-                className="w-[72px] h-[72px] rounded-full flex items-center justify-center flex-shrink-0 text-[34px]"
+                className="w-[72px] h-[72px] rounded-full flex items-center justify-center flex-shrink-0 text-[calc(34px*var(--font-scale,1))]"
                 style={{ background: '#FFF5F0' }}
               >
                 {icon}
@@ -246,21 +246,21 @@ export default function JobDetailPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex gap-1.5 flex-wrap mb-2">
                   {distKm != null && (
-                    <span className="text-[12px] font-bold py-[4px] px-2.5 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
+                    <span className="text-[calc(12px*var(--font-scale,1))] font-bold py-[4px] px-2.5 rounded-full" style={{ background: '#FFF5F0', color: '#E85C1E' }}>
                       🚶 {formatDistance(distKm)} · {walkMin}분
                     </span>
                   )}
                   {isNew && (
                     <span
-                      className="text-[11px] font-bold py-[4px] px-2.5 rounded-full text-white"
+                      className="text-[calc(11px*var(--font-scale,1))] font-bold py-[4px] px-2.5 rounded-full text-white"
                       style={{ background: 'linear-gradient(135deg, #E85C1E, #FF7043)' }}
                     >
                       NEW
                     </span>
                   )}
                 </div>
-                <div className="text-[20px] font-extrabold leading-snug" style={{ color: '#1A1A18' }}>{job.title}</div>
-                <div className="text-[14px] mt-1.5 leading-snug" style={{ color: '#888780' }}>
+                <div className="text-[calc(20px*var(--font-scale,1))] font-extrabold leading-snug" style={{ color: '#1A1A18' }}>{job.title}</div>
+                <div className="text-[calc(14px*var(--font-scale,1))] mt-1.5 leading-snug" style={{ color: '#888780' }}>
                   {job.employers?.company_name}
                   {job.address ? ` · ${job.address}` : ''}
                 </div>
@@ -272,13 +272,13 @@ export default function JobDetailPage() {
           <div className="px-4 pt-3">
             <div className="rounded-[14px] py-4 px-5 flex items-center justify-between" style={{ background: '#FFF8F5' }}>
               <div>
-                <div className="text-[14px] font-medium" style={{ color: '#888780' }}>💰 시급</div>
-                <div className="text-[24px] font-extrabold mt-0.5" style={{ color: '#E85C1E', letterSpacing: '-0.5px' }}>
+                <div className="text-[calc(14px*var(--font-scale,1))] font-medium" style={{ color: '#888780' }}>💰 시급</div>
+                <div className="text-[calc(24px*var(--font-scale,1))] font-extrabold mt-0.5" style={{ color: '#E85C1E', letterSpacing: '-0.5px' }}>
                   {job.hourly_wage ? `${job.hourly_wage.toLocaleString()}원` : '협의'}
                 </div>
               </div>
               {job.work_hours && (
-                <div className="text-[13px] font-medium text-right max-w-[45%]" style={{ color: '#5F5E5A' }}>
+                <div className="text-[calc(13px*var(--font-scale,1))] font-medium text-right max-w-[45%]" style={{ color: '#5F5E5A' }}>
                   {job.work_hours}
                 </div>
               )}
@@ -288,7 +288,7 @@ export default function JobDetailPage() {
           {/* 근무 조건 */}
           <div className="px-4 pt-3">
             <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div className="text-[16px] font-extrabold mb-3" style={{ color: '#1A1A18' }}>📅 근무 조건</div>
+              <div className="text-[calc(16px*var(--font-scale,1))] font-extrabold mb-3" style={{ color: '#1A1A18' }}>📅 근무 조건</div>
               {[
                 { label: '근무 요일', value: job.work_days },
                 { label: '근무 시간', value: job.work_hours },
@@ -300,8 +300,8 @@ export default function JobDetailPage() {
                   className="flex items-center justify-between py-3"
                   style={{ borderBottom: i < arr.length - 1 ? '1px solid #EDE8E2' : 'none' }}
                 >
-                  <span className="text-[14px]" style={{ color: '#888780' }}>{row.label}</span>
-                  <span className="text-[15px] font-medium text-right" style={{ color: '#1A1A18' }}>{row.value}</span>
+                  <span className="text-[calc(14px*var(--font-scale,1))]" style={{ color: '#888780' }}>{row.label}</span>
+                  <span className="text-[calc(15px*var(--font-scale,1))] font-medium text-right" style={{ color: '#1A1A18' }}>{row.value}</span>
                 </div>
               ))}
             </div>
@@ -311,8 +311,8 @@ export default function JobDetailPage() {
           {job.description && (
             <div className="px-4 pt-3">
               <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                <div className="text-[16px] font-extrabold mb-3" style={{ color: '#1A1A18' }}>📝 업무 내용</div>
-                <p className="text-[15px] whitespace-pre-wrap leading-relaxed" style={{ color: '#1A1A18' }}>
+                <div className="text-[calc(16px*var(--font-scale,1))] font-extrabold mb-3" style={{ color: '#1A1A18' }}>📝 업무 내용</div>
+                <p className="text-[calc(15px*var(--font-scale,1))] whitespace-pre-wrap leading-relaxed" style={{ color: '#1A1A18' }}>
                   {job.description}
                 </p>
               </div>
@@ -323,8 +323,8 @@ export default function JobDetailPage() {
           {job.requirements && (
             <div className="px-4 pt-3">
               <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                <div className="text-[16px] font-extrabold mb-3" style={{ color: '#1A1A18' }}>✅ 지원 자격·우대사항</div>
-                <p className="text-[15px] whitespace-pre-wrap leading-relaxed" style={{ color: '#1A1A18' }}>
+                <div className="text-[calc(16px*var(--font-scale,1))] font-extrabold mb-3" style={{ color: '#1A1A18' }}>✅ 지원 자격·우대사항</div>
+                <p className="text-[calc(15px*var(--font-scale,1))] whitespace-pre-wrap leading-relaxed" style={{ color: '#1A1A18' }}>
                   {job.requirements}
                 </p>
               </div>
@@ -335,8 +335,8 @@ export default function JobDetailPage() {
           {job.benefits && (
             <div className="px-4 pt-3">
               <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                <div className="text-[16px] font-extrabold mb-3" style={{ color: '#1A1A18' }}>🎁 복리후생</div>
-                <p className="text-[15px] whitespace-pre-wrap leading-relaxed" style={{ color: '#1A1A18' }}>
+                <div className="text-[calc(16px*var(--font-scale,1))] font-extrabold mb-3" style={{ color: '#1A1A18' }}>🎁 복리후생</div>
+                <p className="text-[calc(15px*var(--font-scale,1))] whitespace-pre-wrap leading-relaxed" style={{ color: '#1A1A18' }}>
                   {job.benefits}
                 </p>
               </div>
@@ -346,8 +346,8 @@ export default function JobDetailPage() {
           {/* 근무지 */}
           <div className="px-4 pt-3">
             <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div className="text-[16px] font-extrabold mb-3" style={{ color: '#1A1A18' }}>📍 근무지</div>
-              <div className="text-[15px] mb-3 leading-relaxed" style={{ color: '#1A1A18' }}>
+              <div className="text-[calc(16px*var(--font-scale,1))] font-extrabold mb-3" style={{ color: '#1A1A18' }}>📍 근무지</div>
+              <div className="text-[calc(15px*var(--font-scale,1))] mb-3 leading-relaxed" style={{ color: '#1A1A18' }}>
                 {addressForMap || '주소 미등록'}
               </div>
               {mapUrl && (
@@ -355,7 +355,7 @@ export default function JobDetailPage() {
                   href={mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[14px] font-bold"
+                  className="inline-flex items-center gap-1 text-[calc(14px*var(--font-scale,1))] font-bold"
                   style={{ color: '#E85C1E' }}
                 >
                   지도로 보기 →
@@ -367,21 +367,21 @@ export default function JobDetailPage() {
           {/* 회사 정보 */}
           <div className="px-4 pt-3">
             <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div className="text-[16px] font-extrabold mb-3" style={{ color: '#1A1A18' }}>🏢 회사 정보</div>
+              <div className="text-[calc(16px*var(--font-scale,1))] font-extrabold mb-3" style={{ color: '#1A1A18' }}>🏢 회사 정보</div>
               <div className="flex items-center justify-between py-2.5">
-                <span className="text-[14px]" style={{ color: '#888780' }}>회사명</span>
-                <span className="text-[15px] font-medium" style={{ color: '#1A1A18' }}>{job.employers?.company_name || '-'}</span>
+                <span className="text-[calc(14px*var(--font-scale,1))]" style={{ color: '#888780' }}>회사명</span>
+                <span className="text-[calc(15px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>{job.employers?.company_name || '-'}</span>
               </div>
               {job.employers?.contact_name && (
                 <div className="flex items-center justify-between py-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
-                  <span className="text-[14px]" style={{ color: '#888780' }}>담당자</span>
-                  <span className="text-[15px] font-medium" style={{ color: '#1A1A18' }}>{job.employers.contact_name}</span>
+                  <span className="text-[calc(14px*var(--font-scale,1))]" style={{ color: '#888780' }}>담당자</span>
+                  <span className="text-[calc(15px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>{job.employers.contact_name}</span>
                 </div>
               )}
               {job.employers?.phone && (
                 <div className="flex items-center justify-between py-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
-                  <span className="text-[14px]" style={{ color: '#888780' }}>연락처</span>
-                  <a href={`tel:${job.employers.phone}`} className="text-[15px] font-bold" style={{ color: '#E85C1E' }}>
+                  <span className="text-[calc(14px*var(--font-scale,1))]" style={{ color: '#888780' }}>연락처</span>
+                  <a href={`tel:${job.employers.phone}`} className="text-[calc(15px*var(--font-scale,1))] font-bold" style={{ color: '#E85C1E' }}>
                     {job.employers.phone}
                   </a>
                 </div>
@@ -406,7 +406,7 @@ export default function JobDetailPage() {
             </button>
             {applied ? (
               <button
-                className="flex-1 h-[54px] border-none rounded-[14px] text-[16px] font-bold cursor-not-allowed"
+                className="flex-1 h-[54px] border-none rounded-[14px] text-[calc(16px*var(--font-scale,1))] font-bold cursor-not-allowed"
                 style={{ background: '#EDE8E2', color: '#888780' }}
                 disabled
               >
@@ -414,7 +414,7 @@ export default function JobDetailPage() {
               </button>
             ) : (
               <button
-                className="flex-1 h-[54px] border-none rounded-[14px] text-[16px] font-bold text-white active:scale-[0.97] transition-transform shadow-sm"
+                className="flex-1 h-[54px] border-none rounded-[14px] text-[calc(16px*var(--font-scale,1))] font-bold text-white active:scale-[0.97] transition-transform shadow-sm"
                 style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}
                 onClick={handleApplyClick}
               >
@@ -440,27 +440,27 @@ export default function JobDetailPage() {
                 <div className="w-10 h-1 rounded-full" style={{ background: '#DDD' }} />
               </div>
               <div className="px-6 pt-3 pb-1">
-                <div className="text-[20px] font-extrabold" style={{ color: '#1A1A18' }}>이 일자리에 지원할까요?</div>
+                <div className="text-[calc(20px*var(--font-scale,1))] font-extrabold" style={{ color: '#1A1A18' }}>이 일자리에 지원할까요?</div>
               </div>
               <div className="px-6 pt-4 pb-4">
                 <div className="rounded-[14px] p-4 mb-4" style={{ background: '#F7F5F2' }}>
-                  <div className="text-[16px] font-bold leading-snug" style={{ color: '#1A1A18' }}>{job.title}</div>
-                  <div className="text-[13px] mt-1" style={{ color: '#888780' }}>{job.employers?.company_name}</div>
+                  <div className="text-[calc(16px*var(--font-scale,1))] font-bold leading-snug" style={{ color: '#1A1A18' }}>{job.title}</div>
+                  <div className="text-[calc(13px*var(--font-scale,1))] mt-1" style={{ color: '#888780' }}>{job.employers?.company_name}</div>
                 </div>
                 <ul className="flex flex-col gap-3 m-0 p-0 list-none">
                   <li className="flex items-start gap-2.5">
-                    <span className="text-[18px] flex-shrink-0 leading-none mt-0.5">📞</span>
-                    <span className="text-[15px]" style={{ color: '#1A1A18' }}>지원하면 회사에서 연락드려요</span>
+                    <span className="text-[calc(18px*var(--font-scale,1))] flex-shrink-0 leading-none mt-0.5">📞</span>
+                    <span className="text-[calc(15px*var(--font-scale,1))]" style={{ color: '#1A1A18' }}>지원하면 회사에서 연락드려요</span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <span className="text-[18px] flex-shrink-0 leading-none mt-0.5">📋</span>
-                    <span className="text-[15px]" style={{ color: '#1A1A18' }}>내 이력서가 회사로 전달돼요 (이름, 연락처, 경력, 자격증 포함)</span>
+                    <span className="text-[calc(18px*var(--font-scale,1))] flex-shrink-0 leading-none mt-0.5">📋</span>
+                    <span className="text-[calc(15px*var(--font-scale,1))]" style={{ color: '#1A1A18' }}>내 이력서가 회사로 전달돼요 (이름, 연락처, 경력, 자격증 포함)</span>
                   </li>
                 </ul>
               </div>
               <div className="px-6 pb-8 pt-3 flex gap-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
                 <button
-                  className="flex-1 py-4 rounded-xl text-[16px] font-medium border-none active:scale-[0.97] transition-transform"
+                  className="flex-1 py-4 rounded-xl text-[calc(16px*var(--font-scale,1))] font-medium border-none active:scale-[0.97] transition-transform"
                   style={{ background: '#F7F5F2', color: '#888780' }}
                   onClick={() => setShowConfirm(false)}
                   disabled={applying}
@@ -468,7 +468,7 @@ export default function JobDetailPage() {
                   취소
                 </button>
                 <button
-                  className="flex-[2] py-4 rounded-xl text-[16px] font-bold text-white border-none active:scale-[0.97] transition-transform"
+                  className="flex-[2] py-4 rounded-xl text-[calc(16px*var(--font-scale,1))] font-bold text-white border-none active:scale-[0.97] transition-transform"
                   style={{ background: applying ? '#CCC' : '#E85C1E', boxShadow: applying ? 'none' : '0 2px 8px rgba(232,92,30,0.3)' }}
                   onClick={confirmApply}
                   disabled={applying}

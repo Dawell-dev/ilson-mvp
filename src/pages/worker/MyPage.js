@@ -99,7 +99,7 @@ function MyPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F5F2' }}>
         <div className="flex flex-col items-center">
           <div className="w-10 h-10 border-[3px] rounded-full animate-spin mb-3" style={{ borderColor: 'rgba(232,92,30,0.15)', borderTopColor: '#E85C1E' }} />
-          <span className="text-[14px] font-medium" style={{ color: '#888780' }}>불러오는 중...</span>
+          <span className="text-[calc(14px*var(--font-scale,1))] font-medium" style={{ color: '#888780' }}>불러오는 중...</span>
         </div>
       </div>
     );
@@ -110,17 +110,17 @@ function MyPage() {
     return (
       <div className="min-h-screen pb-24" style={{ background: '#F7F5F2' }}>
         <div className="px-6 py-5" style={{ background: '#FAFAF8', borderBottom: '1px solid #EDE8E2' }}>
-          <h1 className="text-[22px] font-extrabold" style={{ color: '#1A1A18' }}>내 정보</h1>
+          <h1 className="text-[calc(22px*var(--font-scale,1))] font-extrabold" style={{ color: '#1A1A18' }}>내 정보</h1>
         </div>
 
         <div className="px-6 py-16 text-center">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: '#FFF5F0' }}>
-            <span className="text-[44px]">👋</span>
+            <span className="text-[calc(44px*var(--font-scale,1))]">👋</span>
           </div>
-          <h2 className="text-[22px] font-extrabold mb-3" style={{ color: '#1A1A18' }}>
+          <h2 className="text-[calc(22px*var(--font-scale,1))] font-extrabold mb-3" style={{ color: '#1A1A18' }}>
             로그인이 필요해요
           </h2>
-          <p className="text-[16px] mb-8 leading-relaxed" style={{ color: '#888780' }}>
+          <p className="text-[calc(16px*var(--font-scale,1))] mb-8 leading-relaxed" style={{ color: '#888780' }}>
             카카오로 간편하게 로그인하고<br />
             가까운 일자리를 찾아보세요!
           </p>
@@ -139,7 +139,7 @@ function MyPage() {
       {/* 헤더 - 카카오 프로필 */}
       <div className="px-6 py-8 text-white" style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}>
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-[26px] font-extrabold">내 정보</h1>
+          <h1 className="text-[calc(26px*var(--font-scale,1))] font-extrabold">내 정보</h1>
           <button onClick={handleLogout} className="p-2 rounded-full active:scale-90 transition-transform" style={{ background: 'rgba(255,255,255,0.15)' }}>
             <LogOut size={22} />
           </button>
@@ -159,8 +159,8 @@ function MyPage() {
             </div>
           )}
           <div>
-            <h2 className="text-[22px] font-extrabold">{user.name}님</h2>
-            <p className="text-[14px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{user.email}</p>
+            <h2 className="text-[calc(22px*var(--font-scale,1))] font-extrabold">{user.name}님</h2>
+            <p className="text-[calc(14px*var(--font-scale,1))]" style={{ color: 'rgba(255,255,255,0.7)' }}>{user.email}</p>
           </div>
         </div>
       </div>
@@ -168,7 +168,7 @@ function MyPage() {
       {/* 프로필 정보 */}
       <div className="px-4 py-4">
         <Card>
-          <h3 className="text-[18px] font-extrabold mb-4" style={{ color: '#1A1A18' }}>내 프로필</h3>
+          <h3 className="text-[calc(18px*var(--font-scale,1))] font-extrabold mb-4" style={{ color: '#1A1A18' }}>내 프로필</h3>
 
           {worker ? (
             <div className="space-y-4">
@@ -176,14 +176,14 @@ function MyPage() {
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#FFF5F0' }}>
                   <MapPin style={{ color: '#E85C1E' }} size={20} />
                 </div>
-                <span className="text-[16px] font-medium" style={{ color: '#1A1A18' }}>{worker.address || '주소 미등록'}</span>
+                <span className="text-[calc(16px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>{worker.address || '주소 미등록'}</span>
               </div>
 
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#F7F5F2' }}>
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#FFF5F0' }}>
                   <Briefcase style={{ color: '#E85C1E' }} size={20} />
                 </div>
-                <span className="text-[16px] font-medium" style={{ color: '#1A1A18' }}>
+                <span className="text-[calc(16px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>
                   {worker.job_types?.length > 0
                     ? worker.job_types.join(', ')
                     : '희망직종 미등록'}
@@ -194,7 +194,7 @@ function MyPage() {
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#FFF5F0' }}>
                   <Clock style={{ color: '#E85C1E' }} size={20} />
                 </div>
-                <span className="text-[16px] font-medium" style={{ color: '#1A1A18' }}>
+                <span className="text-[calc(16px*var(--font-scale,1))] font-medium" style={{ color: '#1A1A18' }}>
                   {worker.available_times?.length > 0
                     ? worker.available_times.join(', ')
                     : '가능시간 미등록'}
@@ -204,9 +204,9 @@ function MyPage() {
           ) : (
             <div className="text-center py-6">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#FFF5F0' }}>
-                <span className="text-[28px]">👤</span>
+                <span className="text-[calc(28px*var(--font-scale,1))]">👤</span>
               </div>
-              <p className="text-[16px] font-medium mb-4" style={{ color: '#888780' }}>아직 구직 프로필이 없어요</p>
+              <p className="text-[calc(16px*var(--font-scale,1))] font-medium mb-4" style={{ color: '#888780' }}>아직 구직 프로필이 없어요</p>
               <Button
                 variant="outline"
                 size="medium"
@@ -221,15 +221,15 @@ function MyPage() {
 
       {/* 지원 내역 */}
       <div className="px-4 py-2">
-        <h3 className="text-[18px] font-extrabold mb-4 px-1" style={{ color: '#1A1A18' }}>지원 내역</h3>
+        <h3 className="text-[calc(18px*var(--font-scale,1))] font-extrabold mb-4 px-1" style={{ color: '#1A1A18' }}>지원 내역</h3>
 
         {applications.length === 0 ? (
           <Card>
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#F0F4FF' }}>
-                <span className="text-[28px]">📋</span>
+                <span className="text-[calc(28px*var(--font-scale,1))]">📋</span>
               </div>
-              <p className="text-[16px] font-medium mb-4" style={{ color: '#888780' }}>아직 지원한 일자리가 없어요</p>
+              <p className="text-[calc(16px*var(--font-scale,1))] font-medium mb-4" style={{ color: '#888780' }}>아직 지원한 일자리가 없어요</p>
               <Button
                 variant="outline"
                 size="medium"
@@ -250,16 +250,16 @@ function MyPage() {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className={`inline-block text-[13px] font-bold px-3 py-1 rounded-full mb-2 ${getStatusColor(app.status)}`}>
+                    <span className={`inline-block text-[calc(13px*var(--font-scale,1))] font-bold px-3 py-1 rounded-full mb-2 ${getStatusColor(app.status)}`}>
                       {getStatusText(app.status)}
                     </span>
-                    <h4 className="text-[17px] font-bold" style={{ color: '#1A1A18' }}>
+                    <h4 className="text-[calc(17px*var(--font-scale,1))] font-bold" style={{ color: '#1A1A18' }}>
                       {app.jobs?.title}
                     </h4>
-                    <p className="text-[14px] mt-1" style={{ color: '#888780' }}>
+                    <p className="text-[calc(14px*var(--font-scale,1))] mt-1" style={{ color: '#888780' }}>
                       {app.jobs?.employers?.company_name}
                     </p>
-                    <p className="text-[13px] mt-2" style={{ color: '#B4B2A9' }}>
+                    <p className="text-[calc(13px*var(--font-scale,1))] mt-2" style={{ color: '#B4B2A9' }}>
                       {new Date(app.applied_at).toLocaleDateString('ko-KR')} 지원
                     </p>
                   </div>

@@ -5,6 +5,16 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontSize: {
+        xs: ['calc(0.75rem * var(--font-scale, 1))', { lineHeight: '1.4' }],
+        sm: ['calc(0.875rem * var(--font-scale, 1))', { lineHeight: '1.45' }],
+        base: ['calc(1rem * var(--font-scale, 1))', { lineHeight: '1.5' }],
+        lg: ['calc(1.125rem * var(--font-scale, 1))', { lineHeight: '1.5' }],
+        xl: ['calc(1.25rem * var(--font-scale, 1))', { lineHeight: '1.4' }],
+        '2xl': ['calc(1.5rem * var(--font-scale, 1))', { lineHeight: '1.35' }],
+        '3xl': ['calc(1.875rem * var(--font-scale, 1))', { lineHeight: '1.25' }],
+        '4xl': ['calc(2.25rem * var(--font-scale, 1))', { lineHeight: '1.15' }],
+      },
       colors: {
         primary: {
           DEFAULT: '#E65100',

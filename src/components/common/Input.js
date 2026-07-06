@@ -16,7 +16,7 @@ function Input({
   return (
     <div className={`mb-5 ${className}`}>
       {label && (
-        <label className="block text-[18px] font-bold text-[#1A1A18] mb-2">
+        <label className="block text-[calc(18px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-2">
           {label}
           {required && <span className="text-[#E85C1E] ml-1">*</span>}
         </label>
@@ -30,7 +30,7 @@ function Input({
         required={required}
         disabled={disabled}
         className={`
-          w-full px-5 py-4 text-[18px] font-medium
+          w-full px-5 py-4 text-[calc(18px*var(--font-scale,1))] font-medium
           border-2 rounded-2xl outline-none
           focus:border-[#E85C1E]
           disabled:bg-[#F7F5F2] disabled:text-[#888780]
@@ -39,10 +39,10 @@ function Input({
         `}
       />
       {error && (
-        <p className="mt-2 text-[15px] text-[#EF4444]">{error}</p>
+        <p className="mt-2 text-[calc(15px*var(--font-scale,1))] text-[#EF4444]">{error}</p>
       )}
       {helpText && !error && (
-        <p className="mt-2 text-[15px] text-[#888780]">{helpText}</p>
+        <p className="mt-2 text-[calc(15px*var(--font-scale,1))] text-[#888780]">{helpText}</p>
       )}
     </div>
   );

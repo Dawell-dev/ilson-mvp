@@ -69,7 +69,7 @@ function StatusBadge({ status }) {
   const s = map[status] || map.open;
   return (
     <span
-      className="inline-block text-[12px] font-medium py-0.5 px-2 rounded-full"
+      className="inline-block text-[calc(12px*var(--font-scale,1))] font-medium py-0.5 px-2 rounded-full"
       style={{ background: s.bg, color: s.color }}
     >
       {s.label}
@@ -398,7 +398,7 @@ function EmployerManagePage() {
     <div className="min-h-screen pb-12" style={{ background: '#F7F5F2' }}>
       {/* 토스트 */}
       <div
-        className="fixed top-20 left-1/2 -translate-x-1/2 z-[300] py-2 px-5 rounded-full text-[13px] text-white transition-opacity"
+        className="fixed top-20 left-1/2 -translate-x-1/2 z-[300] py-2 px-5 rounded-full text-[calc(13px*var(--font-scale,1))] text-white transition-opacity"
         style={{
           background: 'rgba(0,0,0,0.75)',
           opacity: toast ? 1 : 0,
