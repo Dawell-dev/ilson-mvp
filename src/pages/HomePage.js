@@ -497,7 +497,7 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
           );
           const data = await res.json();
           const name = extractFullAddress(data) || '내 동네';
-          onSelect(name);
+          onSelect(name, { lat: latitude, lng: longitude });
           setGpsLoading(false);
           onClose();
         } catch {
@@ -637,10 +637,13 @@ function LocationPickerModal({ isOpen, onClose, onSelect, currentRegion }) {
               <div className="flex flex-col">
                 {results.map((item, idx) => {
                   const fullAddress = extractFullAddress(item);
+                  const lat = parseFloat(item.lat);
+                  const lng = parseFloat(item.lon);
+                  const coords = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
                   return (
                     <button
                       key={item.place_id || idx}
-                      onClick={() => { onSelect(fullAddress); onClose(); }}
+                      onClick={() => { onSelect(fullAddress, coords); onClose(); }}
                       className="flex items-center gap-2.5 py-3 px-2 text-left rounded-lg active:bg-[#FFF5F0] transition-colors"
                       style={{ borderBottom: idx < results.length - 1 ? '1px solid #F3EFEA' : 'none' }}
                     >
@@ -1008,7 +1011,10 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
       <LocationPickerModal
         isOpen={showLocationPicker}
         onClose={() => setShowLocationPicker(false)}
-        onSelect={(name) => setRegion(name)}
+        onSelect={(name, coords) => {
+          setRegion(name);
+          if (coords) setJobCoords(coords); // 선택 좌표 기준으로 거리 재계산·재정렬
+        }}
         currentRegion={region}
       />
     </div>
