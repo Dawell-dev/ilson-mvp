@@ -1373,12 +1373,13 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
     return y > 0 ? `${y}년 ${m}개월` : `${m}개월`;
   };
 
-  const [toastVisible, setToastVisible] = useState(false);
+  const [toast, setToast] = useState({ visible: false, msg: '' });
+  const showToast = (msg) => {
+    setToast({ visible: true, msg });
+    setTimeout(() => setToast((t) => ({ ...t, visible: false })), 1800);
+  };
   const triggerSave = async (overrideProfile = null) => {
     const current = overrideProfile || profile;
-
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 1800);
 
     // workers 테이블에 저장
     if (!kakaoId) return null;
@@ -1396,16 +1397,21 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
     try {
       if (workerId) {
-        await supabase.from('workers').update(payload).eq('id', workerId);
+        const { error } = await supabase.from('workers').update(payload).eq('id', workerId);
+        if (error) throw error;
+        showToast('저장됐어요');
         return workerId;
       }
-      const { data } = await supabase.from('workers').insert([payload]).select().single();
+      const { data, error } = await supabase.from('workers').insert([payload]).select().single();
+      if (error) throw error;
       if (data) {
         setWorkerId(data.id);
+        showToast('저장됐어요');
         return data.id;
       }
     } catch (e) {
       console.error('프로필 저장 오류:', e);
+      showToast('저장하지 못했어요. 다시 시도해주세요');
     }
     return null;
   };
@@ -1432,8 +1438,8 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
   return (
     <div className="relative">
       {/* 토스트 */}
-      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 py-2 px-5 rounded-full text-[calc(13px*var(--font-scale,1))] text-white transition-opacity" style={{ background: 'rgba(0,0,0,0.75)', opacity: toastVisible ? 1 : 0, pointerEvents: 'none' }}>
-        저장됐어요
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 py-2 px-5 rounded-full text-[calc(13px*var(--font-scale,1))] text-white transition-opacity" style={{ background: 'rgba(0,0,0,0.75)', opacity: toast.visible ? 1 : 0, pointerEvents: 'none' }}>
+        {toast.msg}
       </div>
 
       {/* 헤더 */}
