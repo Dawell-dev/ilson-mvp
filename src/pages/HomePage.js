@@ -1163,6 +1163,8 @@ function JobCard({ job, index, isFav, toggleFav }) {
 
 
 // ─── 마이페이지 ───
+// 일할 수 있는 날·자격증·운전 가능·경력 섹션 임시 숨김. 복원 시 true로 변경.
+const SHOW_HIDDEN_PROFILE_SECTIONS = false;
 const PROFILE_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const PROFILE_TIMES = ['오전', '오후', '야간'];
 const PROFILE_JOBS = ['아파트 경비', '상가·건물 청소'];
@@ -1464,7 +1466,8 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
           </div>
         </ProfileSection>
 
-        {/* 일할 수 있는 날 */}
+        {/* 일할 수 있는 날 — 임시 숨김 */}
+        {SHOW_HIDDEN_PROFILE_SECTIONS && (
         <ProfileSection icon="📅" iconBg="#E8F5E9" title="일할 수 있는 날">
           <div className="grid grid-cols-7 gap-1.5">
             {PROFILE_DAYS.map(d => {
@@ -1497,6 +1500,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             </div>
           </div>
         </ProfileSection>
+        )}
 
         {/* 원하는 일 */}
         <ProfileSection icon="💼" iconBg="#FBE9E7" title="원하는 일">
@@ -1533,7 +1537,8 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
           </div>
         </ProfileSection>
 
-        {/* 자격증 */}
+        {/* 자격증·운전 가능·경력 — 임시 숨김 */}
+        {SHOW_HIDDEN_PROFILE_SECTIONS && (<>
         <ProfileSection icon="🏅" iconBg="#FFF3E0" title="자격증" badge={`${certifications.length}건`}>
           {certifications.map((c) => (
             <div key={c.id} className="flex items-start gap-2">
@@ -1616,6 +1621,7 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
             + 경력 추가하기
           </button>
         </ProfileSection>
+        </>)}
 
         {/* 한 줄 소개 (선택) */}
         <ProfileSection icon="✏️" iconBg="#F3E5F5" title="한 줄 소개" badge="선택">
