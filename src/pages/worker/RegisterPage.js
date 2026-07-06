@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { JOB_TYPES } from '../../constants/jobTypes';
+import { shareToKakao } from '../../lib/kakaoShare';
 
 const REGIONS = {
   '수원시': {
@@ -74,6 +75,9 @@ function RegisterPage() {
   const shareInvite = async () => {
     const url = window.location.origin;
     const text = '집 근처 일자리를 카톡으로 받는 일손이에요. 같이 써봐요!';
+    // 1순위: 카카오톡 공유 (JS 키 미설정·SDK 실패 시 false)
+    if (await shareToKakao({ text, url })) return;
+    // 2순위: 기존 웹 공유 / 클립보드
     try {
       if (navigator.share) {
         await navigator.share({ title: '일손', text, url });
