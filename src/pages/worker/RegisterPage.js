@@ -57,12 +57,23 @@ function RegisterPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.from('workers').insert([{
+      // workers 테이블 스키마 기준: 지역은 address 컬럼 (내정보 저장 로직과 동일 규약)
+      const payload = {
         name: profile.name,
-        region,
+        address: region,
+        phone: `kakao_${profile.kakaoId}`,
         job_types: jobTypes,
         kakao_id: profile.kakaoId,
-      }]);
+      };
+      // 기존 등록자면 update (재온보딩 시 중복 insert 방지)
+      const { data: existing } = await supabase
+        .from('workers')
+        .select('id')
+        .eq('kakao_id', profile.kakaoId)
+        .maybeSingle();
+      const { error } = existing
+        ? await supabase.from('workers').update(payload).eq('id', existing.id)
+        : await supabase.from('workers').insert([payload]);
       if (error) throw error;
       setStep(4);
     } catch (e) {
