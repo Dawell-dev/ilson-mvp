@@ -211,7 +211,8 @@ function LoginScreen({ onNext, onBack }) {
       provider: 'kakao',
       options: {
         redirectTo: window.location.origin,
-        scopes: 'profile_nickname profile_image account_email'
+        // account_email은 비즈 앱 전환 후 동의항목 활성화되면 복원
+        scopes: 'profile_nickname profile_image'
       }
     });
     if (error) {
@@ -1649,6 +1650,20 @@ function ProfileView({ region, profile, setProfile, kakaoId, workerId, setWorker
 
         {/* 글자 크기 설정 */}
         <FontScaleSection />
+
+        {/* 로그아웃 */}
+        <button
+          onClick={async () => {
+            if (window.confirm('로그아웃 하시겠습니까?')) {
+              await supabase.auth.signOut();
+              window.location.href = '/';
+            }
+          }}
+          className="w-full py-4 rounded-2xl text-[calc(15px*var(--font-scale,1))] font-bold bg-white active:scale-[0.98] transition-transform"
+          style={{ color: '#C62828', border: '1px solid #F0EBE4' }}
+        >
+          로그아웃
+        </button>
 
       </div>
 
