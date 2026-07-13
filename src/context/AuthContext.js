@@ -78,7 +78,8 @@ export const AuthProvider = ({ children }) => {
       provider: 'kakao',
       options: {
         redirectTo: window.location.origin + '/auth/callback',
-        scopes: 'profile_nickname profile_image account_email'
+        // account_email은 비즈 앱 전환 후 동의항목 활성화되면 복원
+        scopes: 'profile_nickname profile_image'
       }
     });
     return { data, error };
