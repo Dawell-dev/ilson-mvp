@@ -734,10 +734,15 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
   const [jobs, setJobs] = useState([]);
   const [jobCoords, setJobCoords] = useState(null);
 
-  // 거리 계산용 사용자 위치 1회 획득 (미허용/실패/서비스권 밖이면 수원 시청 fallback)
+  // 거리 계산 기준 좌표: 사용자가 고른 동네 > GPS > 수원 fallback
   useEffect(() => {
     const FALLBACK = { lat: 37.263573, lng: 127.028601 };
-    // 수원·용인·화성 대략 범위. 이 밖이면 더미공고와 너무 멀어 0건이 되므로 fallback.
+    // 사용자가 온보딩·위치변경에서 명시적으로 고른 동네가 있으면 그 좌표를 우선한다.
+    // (GPS 위치와 실거주지가 다른 경우가 흔하고, 선택은 사용자의 명시적 의사)
+    const saved = getLocalProfile()?.coords;
+    if (saved?.lat && saved?.lng) { setJobCoords(saved); return; }
+
+    // 수원·용인·화성 대략 범위. 이 밖이면 공고와 너무 멀어 0건이 되므로 fallback.
     const inServiceArea = (lat, lng) => lat >= 37.0 && lat <= 37.45 && lng >= 126.7 && lng <= 127.35;
     if (!navigator.geolocation) { setJobCoords(FALLBACK); return; }
     navigator.geolocation.getCurrentPosition(
