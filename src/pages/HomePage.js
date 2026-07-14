@@ -20,6 +20,7 @@
  * - 검색/선택 시 region state 즉시 갱신
  */
 import React, { useState, useEffect } from 'react';
+import { Home, Heart, ClipboardList, User } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { JOB_ICONS } from '../constants/jobTypes';
@@ -844,12 +845,13 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
       {/* 하단 탭 */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app flex justify-around pt-2 pb-7 z-[100]" style={{ background: 'rgba(250,250,248,0.97)', backdropFilter: 'blur(12px)', borderTop: '1px solid #EDE8E2' }}>
         {[
-          { key: 'home', label: '홈', emoji: '🏠' },
-          { key: 'favorites', label: '관심', emoji: '❤️' },
-          { key: 'history', label: '지원내역', emoji: '📋' },
-          { key: 'profile', label: '내정보', emoji: '👤' },
+          { key: 'home', label: '홈', Icon: Home },
+          { key: 'favorites', label: '관심', Icon: Heart },
+          { key: 'history', label: '지원내역', Icon: ClipboardList },
+          { key: 'profile', label: '내정보', Icon: User },
         ].map((tab) => {
           const isActive = activeTab === tab.key;
+          const { Icon } = tab;
           return (
             <button
               key={tab.key}
@@ -861,7 +863,12 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
               }}
             >
               <div className="relative">
-                <span className="text-[calc(22px*var(--font-scale,1))]" style={{ opacity: isActive ? 1 : 0.45 }}>{tab.emoji}</span>
+                <Icon
+                  size={Math.round(24 * (getFontScale() > 1.3 ? 1.15 : 1))}
+                  strokeWidth={isActive ? 2.4 : 1.9}
+                  color={isActive ? '#E85C1E' : '#B4B2A9'}
+                  fill={isActive && tab.key === 'favorites' ? '#E85C1E' : 'none'}
+                />
                 {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ background: '#E85C1E' }} />}
               </div>
               <span className="text-[calc(11px*var(--font-scale,1))] mt-0.5" style={{ color: isActive ? '#E85C1E' : '#B4B2A9', fontWeight: isActive ? 700 : 400 }}>
