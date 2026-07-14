@@ -4,6 +4,7 @@ import { CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { JOB_TYPES } from '../../constants/jobTypes';
 import { shareToKakao } from '../../lib/kakaoShare';
+import { saveLocalProfile } from '../../lib/localProfile';
 
 const REGIONS = {
   '수원시': {
@@ -31,9 +32,11 @@ function RegisterPage() {
   const [sel, setSel] = useState({ city: '', gu: '', dong: '' });
   const [jobTypes, setJobTypes] = useState([]);
 
+  // 로그인은 온보딩의 전제가 아니다. 세션이 있으면 이름·kakaoId를 채우고,
+  // 없으면 비로그인 상태로 진행해 결과를 localStorage에 저장한다.
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { navigate('/'); return; }
+      if (!session) return;
       const meta = session.user.user_metadata;
       setProfile({
         name: meta?.name || meta?.full_name || meta?.nickname || '',
@@ -41,7 +44,7 @@ function RegisterPage() {
         avatarUrl: meta?.avatar_url || '',
       });
     });
-  }, [navigate]);
+  }, []);
 
   const region = sel.city && sel.gu && sel.dong ? `${sel.city} ${sel.gu} ${sel.dong}` : '';
 
@@ -57,7 +60,16 @@ function RegisterPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // workers 테이블 스키마 기준: 지역은 address 컬럼 (내정보 저장 로직과 동일 규약)
+      // 온보딩 결과는 항상 로컬에 남긴다 (비로그인 개인화 + 로그인 시 DB 이관 재료)
+      saveLocalProfile({ region, jobTypes });
+
+      // 비로그인 상태면 여기서 종료 — 로그인은 알림·지원 시점에 요구한다
+      if (!profile.kakaoId) {
+        setStep(4);
+        return;
+      }
+
+      // 로그인 상태면 즉시 DB 반영 (지역은 address 컬럼 — 내정보 저장과 동일 규약)
       const payload = {
         name: profile.name,
         address: region,
@@ -65,7 +77,6 @@ function RegisterPage() {
         job_types: jobTypes,
         kakao_id: profile.kakaoId,
       };
-      // 기존 등록자면 update (재온보딩 시 중복 insert 방지)
       const { data: existing } = await supabase
         .from('workers')
         .select('id')
@@ -241,11 +252,17 @@ function RegisterPage() {
         </div>
         <h1 className="text-[calc(28px*var(--font-scale,1))] font-bold text-[#1A1A18] mb-3">준비됐어요!</h1>
         <p className="text-[calc(18px*var(--font-scale,1))] mb-8" style={{ color: '#888780' }}>
-          {profile.name}님께 맞는<br />일자리를 찾아드릴게요
+          {region ? `${region.split(' ').pop()} 근처` : '가까운'} 일자리를<br />모아서 보여드릴게요
         </p>
         <button className="w-full py-5 rounded-2xl text-[calc(18px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: '#E85C1E' }} onClick={() => navigate('/')}>
           일자리 보러가기
         </button>
+        {/* 비로그인 상태면 카톡 알림 수신을 위한 로그인 유도 — 핵심 모델 */}
+        {!profile.kakaoId && (
+          <p className="text-[calc(14px*var(--font-scale,1))] mt-4 leading-relaxed" style={{ color: '#B4B2A9' }}>
+            새 일자리를 카톡으로 받으시려면<br />카카오 로그인이 필요해요
+          </p>
+        )}
         <button className="w-full py-4 mt-3 rounded-2xl text-[calc(17px*var(--font-scale,1))] font-bold border-2" style={{ borderColor: '#E85C1E', color: '#E85C1E', background: '#FFF8F5' }} onClick={shareInvite}>
           주변에 소개하기
         </button>
