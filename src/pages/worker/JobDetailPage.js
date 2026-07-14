@@ -52,14 +52,11 @@ export default function JobDetailPage() {
     setTimeout(() => setToast(''), 1800);
   };
 
-  // 1) 세션 + workers 테이블 조회
+  // 1) 세션 + workers 테이블 조회 (비로그인도 열람 가능 — 로그인은 지원 시점에 요구)
   useEffect(() => {
     const loadSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        navigate('/');
-        return;
-      }
+      if (!session?.user) return;
       const kId = session.user.user_metadata?.provider_id;
       if (!kId) return;
       const { data: worker } = await supabase
@@ -70,7 +67,7 @@ export default function JobDetailPage() {
       if (worker) setWorkerRow(worker);
     };
     loadSession();
-  }, [navigate]);
+  }, []);
 
   // 2) 일자리 조회
   useEffect(() => {
@@ -120,8 +117,9 @@ export default function JobDetailPage() {
   const handleApplyClick = () => {
     if (applied) return;
     if (!workerRow) {
-      showToast('프로필을 먼저 등록해주세요');
-      setTimeout(() => navigate('/?tab=profile'), 1200);
+      // 비로그인 또는 프로필 미등록 — 지원 기록을 남기려면 카카오 로그인이 필요하다
+      showToast('지원하려면 카카오 로그인이 필요해요');
+      setTimeout(() => navigate('/?tab=profile'), 1400);
       return;
     }
     setShowConfirm(true);

@@ -864,7 +864,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
           <ListView filtered={filtered} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} isPersonalized={isPersonalized} onSetup={() => navigate('/register')} />
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
-        {activeTab === 'history' && <HistoryView />}
+        {activeTab === 'history' && <HistoryView workerId={workerId} />}
 {activeTab === 'profile' && <ProfileView region={region} profile={profile} setProfile={setProfile} kakaoId={kakaoId} workerId={workerId} setWorkerId={setWorkerId} careers={careers} setCareers={setCareers} certifications={certifications} setCertifications={setCertifications} />}
       </div>
 
@@ -971,14 +971,17 @@ function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, o
 
 // ─── 잡 카드 ───
 function JobCard({ job, index, isFav, toggleFav }) {
+  const navigate = useNavigate();
   const payParts = job.pay.split(' ');
   const payType = payParts[0];
   const payAmount = payParts.slice(1).join(' ');
   const firstTag = job.tags[0] || '';
+  const stop = (e) => e.stopPropagation(); // 카드 클릭(상세 이동)과 내부 버튼 동작 분리
 
   return (
     <div
-      className="rounded-[18px] p-[18px] w-full animate-fade-up active:scale-[0.98] transition-transform"
+      onClick={() => navigate(`/jobs/${job.id}`)}
+      className="rounded-[18px] p-[18px] w-full animate-fade-up active:scale-[0.98] transition-transform cursor-pointer"
       style={{ background: '#FFFFFF', border: '1px solid #EDE8E2', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', animationDelay: `${Math.min(index, 6) * 0.06}s` }}
     >
       {/* 상단: 뱃지 + 하트 */}
@@ -994,7 +997,7 @@ function JobCard({ job, index, isFav, toggleFav }) {
         <button
           className="w-[36px] h-[36px] border-none rounded-full flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
           style={{ background: isFav ? '#FFF5F0' : '#F7F5F2' }}
-          onClick={() => toggleFav(job.id)}
+          onClick={(e) => { stop(e); toggleFav(job.id); }}
         >
           <span className="text-[calc(20px*var(--font-scale,1))]">{isFav ? '❤️' : '🤍'}</span>
         </button>
@@ -1030,25 +1033,27 @@ function JobCard({ job, index, isFav, toggleFav }) {
         </div>
       )}
 
-      {/* 버튼 - 연락처 있으면 전화, 없으면(공공) 원문 보기 */}
+      {/* 버튼 - 연락처 있으면 전화, 없으면(공공) 원문 사이트로 이동 */}
       <div className="mt-3.5">
         {job.phone ? (
           <a
             href={`tel:${job.phone}`}
+            onClick={stop}
             className="flex items-center justify-center w-full h-[50px] text-white border-none rounded-[14px] text-[calc(16px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform shadow-sm"
             style={{ background: 'linear-gradient(135deg, #E85C1E 0%, #D14E15 100%)' }}
           >
-            전화로 지원하기
+            지원하기
           </a>
         ) : job.sourceUrl ? (
           <a
             href={job.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-full h-[50px] border rounded-[14px] text-[calc(16px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform"
+            onClick={stop}
+            className="flex items-center justify-center w-full h-[50px] border rounded-[14px] text-[calc(15px*var(--font-scale,1))] font-bold active:scale-[0.97] transition-transform"
             style={{ borderColor: '#E85C1E', color: '#E85C1E', background: '#FFF8F5' }}
           >
-            원문에서 지원하기
+            지원하기 ({job.source || '원문'} 사이트로 이동)
           </a>
         ) : (
           <div className="flex items-center justify-center w-full h-[50px] rounded-[14px] text-[calc(15px*var(--font-scale,1))] font-medium" style={{ background: '#F7F5F2', color: '#888780' }}>
@@ -1916,16 +1921,82 @@ function FavoritesView({ favorites, toggleFav, jobs }) {
 }
 
 // ─── 지원내역 ───
-function HistoryView() {
+const APPLY_STATUS = {
+  pending: { label: '지원 완료', bg: '#FFF5F0', color: '#E85C1E' },
+  accepted: { label: '합격', bg: '#E8F5E9', color: '#2E7D32' },
+  rejected: { label: '불합격', bg: '#F7F5F2', color: '#888780' },
+};
+
+function HistoryView({ workerId }) {
+  const navigate = useNavigate();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!workerId) { setLoading(false); return; }
+      const { data, error } = await supabase
+        .from('applications')
+        .select('id, status, created_at, jobs (id, title, address, job_type, employers (company_name))')
+        .eq('worker_id', workerId)
+        .order('created_at', { ascending: false });
+      if (!error && data) setRows(data);
+      setLoading(false);
+    };
+    load();
+  }, [workerId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center pt-24">
+        <div className="w-9 h-9 border-[3px] rounded-full animate-spin" style={{ borderColor: 'rgba(232,92,30,0.15)', borderTopColor: '#E85C1E' }} />
+      </div>
+    );
+  }
+
+  if (!rows.length) {
+    return (
+      <div className="flex flex-col items-center justify-center px-5 pt-20 animate-fade-up">
+        <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center mb-5" style={{ background: '#F0F4FF' }}>
+          <span className="text-[calc(40px*var(--font-scale,1))]">📋</span>
+        </div>
+        <div className="text-[calc(19px*var(--font-scale,1))] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 지원한 곳이 없어요</div>
+        <div className="text-[calc(15px*var(--font-scale,1))] text-center leading-relaxed" style={{ color: '#888780' }}>
+          마음에 드는 일자리에 지원하면<br />진행 상황을 여기서 확인할 수 있어요
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center px-5 pt-20 animate-fade-up">
-      <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center mb-5" style={{ background: '#F0F4FF' }}>
-        <span className="text-[calc(40px*var(--font-scale,1))]">📋</span>
-      </div>
-      <div className="text-[calc(19px*var(--font-scale,1))] font-extrabold mb-2" style={{ color: '#1A1A18' }}>아직 지원한 곳이 없어요</div>
-      <div className="text-[calc(15px*var(--font-scale,1))] text-center leading-relaxed" style={{ color: '#888780' }}>
-        마음에 드는 일자리에 지원하면<br />진행 상황을 여기서 확인할 수 있어요
-      </div>
+    <div className="flex flex-col gap-3 px-4 pt-1 pb-5">
+      {rows.map((row) => {
+        const st = APPLY_STATUS[row.status] || APPLY_STATUS.pending;
+        const job = row.jobs;
+        const applied = new Date(row.created_at);
+        const date = `${applied.getMonth() + 1}월 ${applied.getDate()}일`;
+        return (
+          <div
+            key={row.id}
+            onClick={() => job && navigate(`/jobs/${job.id}`)}
+            className="rounded-[16px] p-4 animate-fade-up cursor-pointer active:scale-[0.99] transition-transform"
+            style={{ background: '#FFFFFF', border: '1px solid #EDE8E2' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[calc(12px*var(--font-scale,1))] font-bold py-[4px] px-2.5 rounded-full" style={{ background: st.bg, color: st.color }}>
+                {st.label}
+              </span>
+              <span className="text-[calc(12px*var(--font-scale,1))]" style={{ color: '#B4B2A9' }}>{date} 지원</span>
+            </div>
+            <div className="text-[calc(17px*var(--font-scale,1))] font-bold" style={{ color: '#1A1A18' }}>
+              {job?.title || '삭제된 공고'}
+            </div>
+            <div className="text-[calc(13px*var(--font-scale,1))] mt-1" style={{ color: '#888780' }}>
+              {[job?.employers?.company_name, job?.address].filter(Boolean).join(' · ')}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
