@@ -452,9 +452,16 @@ export default function JobDetailPage() {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-[calc(18px*var(--font-scale,1))] flex-shrink-0 leading-none mt-0.5">📋</span>
-                    <span className="text-[calc(15px*var(--font-scale,1))]" style={{ color: '#1A1A18' }}>내 이력서가 회사로 전달돼요 (이름, 연락처, 경력, 자격증 포함)</span>
+                    <span className="text-[calc(15px*var(--font-scale,1))]" style={{ color: '#1A1A18' }}>내 이력서가 회사로 전달돼요 (이름, 연락처, 희망 직종)</span>
                   </li>
                 </ul>
+                {/* 플랫폼 고지 — 로그인 화면에서 이동. 지원 직전이 고지 시점으로 적합 */}
+                <div className="mt-4 p-3.5 rounded-[14px]" style={{ background: '#F7F5F2' }}>
+                  <ul className="list-none p-0 m-0 flex flex-col gap-1">
+                    <li className="text-[calc(12px*var(--font-scale,1))] leading-relaxed" style={{ color: '#999' }}>· 일손은 구인·구직 정보를 연결해주는 플랫폼이에요</li>
+                    <li className="text-[calc(12px*var(--font-scale,1))] leading-relaxed" style={{ color: '#999' }}>· 근로계약은 구인업체와 직접 체결해야 해요</li>
+                  </ul>
+                </div>
               </div>
               <div className="px-6 pb-8 pt-3 flex gap-2.5" style={{ borderTop: '1px solid #EDE8E2' }}>
                 <button
