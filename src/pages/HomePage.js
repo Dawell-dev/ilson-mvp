@@ -194,16 +194,12 @@ function LandingScreen({ onStart }) {
         >
           눌러서 시작하기
         </button>
-        <p className="text-center text-[calc(14px*var(--font-scale,1))] text-[#B4B2A9] mt-4">
-          청소·미화 · 경비·주차 · 시설관리
-        </p>
       </div>
     </div>
   );
 }
 
 function LoginScreen({ onNext, onBack }) {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const handleKakao = async () => {
@@ -248,7 +244,7 @@ function LoginScreen({ onNext, onBack }) {
           </div>
         </div>
         <div className="animate-fade-up animation-delay-100 text-[calc(22px*var(--font-scale,1))] text-[#212121] font-extrabold text-center leading-snug mt-3">
-          내 주변 일자리,<br />바로 알려드려요
+          내 주변 일자리<br />바로 알려드려요
         </div>
       </div>
 
@@ -272,29 +268,6 @@ function LoginScreen({ onNext, onBack }) {
             </>
           )}
         </button>
-        <div className="text-center mt-3 text-[calc(15px*var(--font-scale,1))] text-[#9E9E9E] leading-relaxed animate-fade-up animation-delay-250">
-          터치 한 번이면 바로 시작돼요
-        </div>
-
-        {/* 기업 로그인 링크 */}
-        <div className="text-center mt-4 text-[calc(14px*var(--font-scale,1))] text-[#888780] animate-fade-up animation-delay-300">
-          기업 회원이신가요?{' '}
-          <button
-            onClick={() => navigate('/employer/login')}
-            className="text-[#5F5E5A] underline font-medium ml-0.5"
-          >
-            로그인
-          </button>
-        </div>
-
-        {/* 고지사항 */}
-        <div className="mt-5 p-4 rounded-[18px]" style={{ background: '#F5F0EB' }}>
-          <ul className="list-none p-0 m-0 flex flex-col gap-1">
-            <li className="text-[calc(12px*var(--font-scale,1))] text-[#999] leading-relaxed">· 일손은 구인·구직 정보를 연결해주는 플랫폼이에요</li>
-            <li className="text-[calc(12px*var(--font-scale,1))] text-[#999] leading-relaxed">· 근로계약은 구인업체와 직접 체결해야 해요</li>
-          </ul>
-        </div>
-
         {/* 약관 동의 */}
         <div className="text-center mt-4 text-[calc(13px*var(--font-scale,1))] text-[#9E9E9E] leading-relaxed">
           시작하면 <span className="underline cursor-pointer">이용약관</span> 및 <span className="underline cursor-pointer">개인정보처리방침</span>에 동의하게 돼요
