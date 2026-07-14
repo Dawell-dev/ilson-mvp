@@ -57,11 +57,32 @@ function RegisterPage() {
   const toggleJob = (t) =>
     setJobTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
 
+  // 선택한 동네의 좌표를 확보한다 (거리 매칭 기준). 실패해도 온보딩은 진행.
+  const geocodeRegion = async (name) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&countrycodes=kr&limit=1&q=${encodeURIComponent(name)}`,
+        { headers: { 'Accept-Language': 'ko' } }
+      );
+      const data = await res.json();
+      const hit = data?.[0];
+      if (!hit) return null;
+      const lat = parseFloat(hit.lat);
+      const lng = parseFloat(hit.lon);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      // 선택 동네의 좌표까지 저장해야 홈 목록이 그 동네 기준으로 정렬된다
+      const coords = await geocodeRegion(region);
+
       // 온보딩 결과는 항상 로컬에 남긴다 (비로그인 개인화 + 로그인 시 DB 이관 재료)
-      saveLocalProfile({ region, jobTypes });
+      saveLocalProfile({ region, jobTypes, coords });
 
       // 비로그인 상태면 여기서 종료 — 로그인은 알림·지원 시점에 요구한다
       if (!profile.kakaoId) {
