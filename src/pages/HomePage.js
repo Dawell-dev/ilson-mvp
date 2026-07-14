@@ -25,6 +25,7 @@ import { supabase } from '../lib/supabase';
 import { JOB_ICONS } from '../constants/jobTypes';
 import { haversine, formatDistance, walkMinutes } from '../lib/distance';
 import { FONT_SCALE_OPTIONS, getFontScale, setFontScale } from '../lib/fontScale';
+import { getLocalProfile, saveLocalProfile, isOnboarded } from '../lib/localProfile';
 // lucide-react 제거 — AppIcon을 커스텀 SVG로 교체
 
 // ─── 데이터 유틸 ───
@@ -298,137 +299,6 @@ function LoginScreen({ onNext, onBack }) {
         <div className="text-center mt-4 text-[calc(13px*var(--font-scale,1))] text-[#9E9E9E] leading-relaxed">
           시작하면 <span className="underline cursor-pointer">이용약관</span> 및 <span className="underline cursor-pointer">개인정보처리방침</span>에 동의하게 돼요
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────
-// 2) 위치 허용 화면
-// ─────────────────────────────────────
-function LocationScreen({ onGranted, onSkip }) {
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [regionName, setRegionName] = useState('');
-
-  const handleGrant = () => {
-    setLoading(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const { latitude, longitude } = pos.coords;
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko`
-            );
-            const data = await res.json();
-            // 🆕 풀 주소로 저장 (예: "경기도 수원시 팔달구")
-            const name = extractFullAddress(data) || '내 동네';
-            setRegionName(name);
-            setLoading(false);
-            setDone(true);
-            setTimeout(() => onGranted(name), 800);
-          } catch {
-            setRegionName('경기도 수원시 팔달구 매교동');
-            setLoading(false);
-            setDone(true);
-            setTimeout(() => onGranted('경기도 수원시 팔달구 매교동'), 800);
-          }
-        },
-        () => {
-          setRegionName('경기도 수원시 팔달구 매교동');
-          setLoading(false);
-          setDone(true);
-          setTimeout(() => onGranted('경기도 수원시 팔달구 매교동'), 800);
-        },
-        { timeout: 8000 }
-      );
-    } else {
-      setRegionName('경기도 수원시 팔달구 매교동');
-      setLoading(false);
-      setDone(true);
-      setTimeout(() => onGranted('경기도 수원시 팔달구 매교동'), 800);
-    }
-  };
-
-  return (
-    <div className="flex flex-col min-h-screen bg-white justify-center">
-      <div className="px-7 py-10">
-        {/* 지도 일러스트 */}
-        <div className="w-full h-[220px] rounded-[28px] bg-gradient-to-b from-[#E8F5E9] to-[#C8E6C9] flex items-center justify-center mb-8 relative overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 text-xl animate-bounce" style={{ animationDelay: '0.3s' }}>📍</div>
-          <div className="absolute top-[55%] left-[60%] text-xl animate-bounce" style={{ animationDelay: '0.5s' }}>📍</div>
-          <div className="absolute top-[35%] left-[72%] text-xl animate-bounce" style={{ animationDelay: '0.7s' }}>📍</div>
-          <div className="absolute top-[68%] left-[28%] text-xl animate-bounce" style={{ animationDelay: '0.9s' }}>📍</div>
-          <div className="w-[60px] h-[60px] rounded-full bg-white shadow-[0_4px_16px_rgba(230,81,0,0.25)] flex items-center justify-center z-[2] relative">
-            <div className="w-11 h-11 rounded-[22px] bg-primary flex items-center justify-center text-[calc(22px*var(--font-scale,1))]">📍</div>
-            <div className="absolute w-[76px] h-[76px] rounded-full border-[3px] border-primary/20 animate-ping" />
-          </div>
-        </div>
-
-        {/* 텍스트 */}
-        <div className="text-center mb-8">
-          {done ? (
-            <>
-              <div className="text-[calc(46px*var(--font-scale,1))] mb-3.5">✅</div>
-              <div className="text-[calc(23px*var(--font-scale,1))] font-extrabold text-primary mb-2">위치 확인 완료!</div>
-              <div className="text-base text-[#424242] leading-relaxed">
-                <strong className="text-primary font-bold">{regionName}</strong> 근처<br />일자리를 찾고 있어요
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-[calc(25px*var(--font-scale,1))] font-extrabold text-[#212121] mb-2.5 leading-snug">
-                내 근처 일자리를<br />바로 찾아볼까요?
-              </div>
-              <div className="text-base text-[#757575] leading-relaxed">
-                위치를 허용하시면<br /><strong className="text-[#424242]">가까운 일자리</strong>를<br />먼저 보여드려요
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* 혜택 목록 */}
-        {!done && (
-          <>
-            <div className="bg-primary-soft rounded-[22px] p-[18px_20px] mb-7 border border-primary-bg">
-              {[
-                { emoji: '🚶', text: '집에서 가까운 일자리 우선 표시' },
-                { emoji: '⏱️', text: '도보·교통 소요시간 안내' },
-                { emoji: '🔔', text: '새 일자리가 근처에 올라오면 알림' },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3.5 py-[13px] ${i < 2 ? 'border-b border-primary-bg' : ''}`}
-                >
-                  <span className="text-2xl">{item.emoji}</span>
-                  <span className="text-base font-semibold text-[#424242]">{item.text}</span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              className="w-full py-[18px] bg-primary text-white border-none rounded-[28px] text-lg font-bold flex items-center justify-center gap-2.5 shadow-[0_3px_12px_rgba(230,81,0,0.25)]"
-              onClick={handleGrant}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-[3px] border-white/30 border-t-white rounded-full animate-spin" />
-                  위치 확인 중...
-                </>
-              ) : (
-                '📍 내 위치로 일자리 찾기'
-              )}
-            </button>
-            <button
-              className="w-full py-3.5 bg-transparent text-[#9E9E9E] border-none text-[calc(15px*var(--font-scale,1))] font-medium mt-2.5"
-              onClick={onSkip}
-            >
-              나중에 할게요
-            </button>
-          </>
-        )}
       </div>
     </div>
   );
@@ -787,17 +657,18 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [showLocationPicker, setShowLocationPicker] = useState(false); // 🆕 위치 변경 모달
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState(() => ({
     name: '',
     phone: '',
     avatar_url: '',
     days: ['월', '화', '수', '목', '금'],
     times: ['오전', '오후'],
-    jobs: [],
+    // 비로그인 상태에서도 온보딩 결과로 개인화 (로그인은 알림·지원 시점에 요구)
+    jobs: getLocalProfile()?.jobTypes || [],
     distance: '1km',
     driverLicense: 'none',
     bio: '',
-  });
+  }));
   const [workerId, setWorkerId] = useState(null);
   const [kakaoId, setKakaoId] = useState(null);
   const [careers, setCareers] = useState([]);
@@ -844,8 +715,28 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
         const loadedCerts = await loadCertifications(worker.id);
         setCertifications(loadedCerts);
       } else {
-        // 로그인했지만 프로필 미등록(신규) → 온보딩으로 유도
-        navigate('/register');
+        // 로그인했지만 workers 레코드 없음 → 로컬 온보딩 결과가 있으면 DB로 이관
+        const local = getLocalProfile();
+        if (local?.region && local?.jobTypes?.length) {
+          const { data: created, error } = await supabase
+            .from('workers')
+            .insert([{
+              name: meta?.name || meta?.full_name || '사용자',
+              address: local.region,
+              phone: `kakao_${kId}`,
+              job_types: local.jobTypes,
+              kakao_id: kId,
+            }])
+            .select()
+            .single();
+          if (!error && created) {
+            setWorkerId(created.id);
+            setProfile(prev => ({ ...prev, jobs: created.job_types || [] }));
+          }
+        } else {
+          // 온보딩 이력도 없는 신규 → 온보딩으로
+          navigate('/register');
+        }
       }
     };
 
@@ -970,7 +861,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
       {/* 스크롤 영역 */}
       <div className="flex-1 overflow-y-auto pb-24 [-webkit-overflow-scrolling:touch]">
         {activeTab === 'home' && (
-          <ListView filtered={filtered} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} isPersonalized={isPersonalized} onRequireLogin={onRequireLogin} />
+          <ListView filtered={filtered} favorites={favorites} toggleFav={toggleFav} listTitle={isPersonalized ? `${profile.name || '회원'}님께 맞는 일자리` : '가까운 일자리'} isPersonalized={isPersonalized} onSetup={() => navigate('/register')} />
         )}
         {activeTab === 'favorites' && <FavoritesView favorites={favorites} toggleFav={toggleFav} jobs={jobs} />}
         {activeTab === 'history' && <HistoryView />}
@@ -1015,6 +906,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
         onSelect={(name, coords) => {
           setRegion(name);
           if (coords) setJobCoords(coords); // 선택 좌표 기준으로 거리 재계산·재정렬
+          saveLocalProfile({ region: name, coords: coords || null }); // 새로고침에도 유지
         }}
         currentRegion={region}
       />
@@ -1023,7 +915,7 @@ function MainScreen({ region, setRegion, initialTab = 'home', onRequireLogin }) 
 }
 
 // ─── 리스트 뷰 ───
-function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, onRequireLogin }) {
+function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, onSetup }) {
   return (
     <div>
       {/* 섹션 헤더 */}
@@ -1055,8 +947,8 @@ function ListView({ filtered, favorites, toggleFav, listTitle, isPersonalized, o
                 )}
                 <div className="text-center rounded-2xl px-5 py-5" style={{ background: '#FFF5F0', border: '1.5px solid #F5C4A8' }}>
                   <div className="text-[calc(17px*var(--font-scale,1))] font-extrabold mb-1" style={{ color: '#B84A15' }}>내게 맞는 일자리 더 보기</div>
-                  <div className="text-[calc(14px*var(--font-scale,1))] mb-4 leading-relaxed" style={{ color: '#9A6A4E' }}>동네와 직종을 설정하면<br />딱 맞는 일자리만 모아서 보여드려요</div>
-                  <button onClick={onRequireLogin} className="w-full py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: '#E85C1E' }}>
+                  <div className="text-[calc(14px*var(--font-scale,1))] mb-4 leading-relaxed" style={{ color: '#9A6A4E' }}>동네와 직종을 설정하면<br />집 가까운 곳의 딱 맞는 일자리를 보여드려요</div>
+                  <button onClick={onSetup} className="w-full py-3.5 rounded-xl text-[calc(16px*var(--font-scale,1))] font-bold text-white border-none" style={{ background: '#E85C1E' }}>
                     설정하고 더 보기
                   </button>
                 </div>
@@ -2042,8 +1934,10 @@ function HistoryView() {
 // 메인 Export
 // ─────────────────────────────────────
 export default function HomePage() {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState('loading');
-  const [region, setRegion] = useState('');
+  // 온보딩에서 저장한 동네를 초기값으로 (비로그인도 개인화 유지)
+  const [region, setRegion] = useState(() => getLocalProfile()?.region || '');
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
 
@@ -2064,13 +1958,11 @@ export default function HomePage() {
       setScreen(seen ? 'main' : 'landing');
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // 신규 카카오 로그인 직후 1회만 위치 허용 화면 노출
-        setScreen('location');
-      } else if (event === 'SIGNED_OUT') {
-        setScreen('main');
-      }
+    // 로그인 이벤트로 화면을 강제 전환하지 않는다.
+    // (기존: SIGNED_IN → 'location' 강제 → getSession 콜백의 'main'과 경합해 온보딩이 건너뛰어짐)
+    // 온보딩 진입 판단은 랜딩 CTA와 MainScreen의 프로필 상태가 담당한다.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') setScreen('main');
     });
 
     return () => {
@@ -2105,17 +1997,13 @@ export default function HomePage() {
           <LandingScreen
             onStart={() => {
               try { localStorage.setItem('ilson_onboarded', '1'); } catch (e) {}
-              setScreen('main');
+              // 로그인 없이 온보딩(동네·직종)부터 — 개인화된 목록을 먼저 보여준다
+              if (isOnboarded()) setScreen('main');
+              else navigate('/register');
             }}
           />
         )}
-        {screen === 'login' && <LoginScreen onNext={() => setScreen('location')} onBack={() => setScreen('main')} />}
-        {screen === 'location' && (
-          <LocationScreen
-            onGranted={(r) => { setRegion(r); setScreen('main'); }}
-            onSkip={() => { setRegion('위치 미설정'); setScreen('main'); }}
-          />
-        )}
+        {screen === 'login' && <LoginScreen onNext={() => setScreen('main')} onBack={() => setScreen('main')} />}
         {screen === 'main' && <MainScreen region={region} setRegion={setRegion} initialTab={tabParam || 'home'} onRequireLogin={() => setScreen('login')} />}
       </div>
   );
